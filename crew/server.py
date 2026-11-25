@@ -103,12 +103,14 @@ def owner(r: str = Depends(role)):
 
 
 # ------------------------------------------------------------------------------------------------ pages
-PAGES = {"": "index.html", "exchange": "exchange.html", "visualizer": "visualizer.html"}
+PAGES = {"": "index.html", "exchange": "exchange.html", "visualizer": "visualizer.html",
+         "visualizer/scaffold": "visualizer-scaffold.html"}
 
 
 @app.get("/", include_in_schema=False)
 @app.get("/exchange", include_in_schema=False)
 @app.get("/visualizer", include_in_schema=False)
+@app.get("/visualizer/scaffold", include_in_schema=False)
 def page(request: Request):
     # page code only: every number on it comes from the protected API
     return FileResponse(WEB / PAGES[request.url.path.strip("/")], headers={"Cache-Control": "no-cache"})

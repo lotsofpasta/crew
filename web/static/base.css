@@ -65,6 +65,11 @@ header.top nav { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
 header.top nav a { text-decoration: none; color: var(--muted); padding: 6px 10px; border-radius: var(--radius-sm); font-weight: 500; }
 header.top nav a:hover { color: var(--text); background: var(--panel-2); }
 header.top nav a.on { color: var(--text); background: var(--panel-2); }
+@media (max-width: 560px) {
+  header.top { gap: 8px 12px; padding: 8px 12px; }
+  header.top .brand { flex: 1; }
+  header.top nav { order: 3; flex-basis: 100%; margin: 0 -4px; }
+}
 
 /* ---------------------------------------------------------------------------------------------- layout */
 main { max-width: 1240px; margin: 0 auto; padding: 20px 16px 40px; }

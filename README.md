@@ -7,8 +7,8 @@ A plug-and-play starting point for running your own team of AI agents with:
 - **A dashboard** - sign in, see the team, approve or reject what agents propose, read their reports, give them tasks.
 - **An agent exchange** - every message between agents (and you) in one chat, a drop box for links and notes, an
   approval queue, and a live tape of everything the agents do.
-- **A visualizer API + scaffold** - a stable live feed (`/api/viz`) of nodes, edges and pulses, and a blank page
-  wired to it, for you (or your AI) to turn into your own scene.
+- **A visualizer** - a stable live feed (`/api/viz`) of nodes, edges and pulses; a finished sample scene, *The Room*
+  (`/visualizer`), and a blank scaffold (`/visualizer/scaffold`) for you - or your AI - to build your own.
 
 It ships with a clean default identity ([BRAND.md](BRAND.md)) so it looks finished on day one - and every colour,
 font and mark is a token or a file you swap. Making it look like yours is the point: see [DESIGN.md](DESIGN.md).
@@ -42,7 +42,7 @@ made-up traffic.
 | `crew/server.py` | The hub: login, dashboard API, exchange API, `/api/viz`, the agents' sync endpoint. |
 | `crew/agents/` | The framework: reports & approvals (`store`), the signal log (`signals`), tickets between agents, the owner's drop box, the sync protocol, the Python agent client, the LLM brain. |
 | `examples/` | Two example agents - a manager and a researcher. Copy one to start your own. |
-| `web/` | The pages: `index.html` (dashboard), `exchange.html`, `visualizer.html` (scaffold), `static/` (shared JS + CSS tokens). |
+| `web/` | The pages: `index.html` (dashboard), `exchange.html`, `visualizer.html` (sample: The Room), `visualizer-scaffold.html` (blank), `static/` (shared JS, CSS tokens, brand files). |
 | `deploy/` | systemd units, Caddy example, notes for Docker / VPS / tunnels. |
 | `AGENTS.md` | How to write an agent (in any language) and the full sync protocol. |
 | `DESIGN.md` | The brief for designing and branding your dashboard and visualizer - hand it to your AI. |

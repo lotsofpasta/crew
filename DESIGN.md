@@ -29,6 +29,16 @@ AI assistant (Claude Code, etc.) along with your own direction.
   `prefers-reduced-motion` (pulses still show, without the motion).
 - **Readable text**, keyboard-reachable controls, colour never the only signal (pair it with a shape or label).
 
+## Two starting points
+
+- **`/visualizer` - The Room** (`web/visualizer.html`), a finished sample built only from this file. The team sits
+  around one table, your chair is at the head, outside services are doors in the wall. A message is a paper note in
+  the sender's colour sliding to the receiver, with a speech bubble over the speaker; background work is a small dot
+  running to a door. Offline = an empty dashed chair, busy = a breathing ring, needs you = a badge plus a word. It
+  turns the table upright on phones, has hover / keyboard tooltips, a live log, screen-reader announcements for
+  messages to you, and no motion under reduced-motion. Read it as a worked example of the rules below.
+- **`/visualizer/scaffold`** (`web/visualizer-scaffold.html`) - the same data wiring and nothing else.
+
 ## The visualizer data contract
 
 `GET /api/viz?after=<cursor>` (owner or viewer session). `viz-data.js` polls it and gives you:

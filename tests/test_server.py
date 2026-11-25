@@ -88,6 +88,7 @@ def test_drop_goes_to_manager(client):
 
 
 def test_pages_and_static(client):
-    for p in ("/", "/exchange", "/visualizer", "/static/app.js", "/static/viz-data.js"):
+    for p in ("/", "/exchange", "/visualizer", "/visualizer/scaffold", "/static/app.js", "/static/viz-data.js",
+              "/static/brand/mark.svg"):
         assert client.get(p).status_code == 200, p
     assert client.get("/static/../crew/server.py").status_code == 404

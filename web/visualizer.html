@@ -7,92 +7,303 @@
 <link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" href="/static/base.css">
 <style>
-  /* ------------------------------------------------------------------------------------------------
-     VISUALIZER SCAFFOLD - this page is meant to be replaced. It shows that the data flows and nothing more.
-     Hand DESIGN.md to your AI (or read it yourself) and build your own scene here: canvas, SVG, WebGL,
-     whatever fits your brand. Keep /static/app.js + /static/viz-data.js for login and live data.
-     ------------------------------------------------------------------------------------------------ */
+  /* =================================================================================================
+     SAMPLE VISUALIZER - "The Room". Built only from DESIGN.md + /static/viz-data.js.
+     The team sits around one table. Your chair is at the head. Outside services are doors in the wall.
+     A message is a paper note sliding from sender to receiver; background work (LLM calls, web fetches)
+     is a small dot running to a door. Replace it, restyle it, or start from /visualizer/scaffold.
+     ================================================================================================= */
   html, body { height: 100%; }
   body { display: flex; flex-direction: column; }
   #stage { flex: 1; position: relative; min-height: 0; }
-  #scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  #debug { position: absolute; right: 12px; top: 12px; width: min(380px, calc(100% - 24px)); max-height: calc(100% - 24px); overflow: auto; }
+  #room { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  .wall { fill: var(--panel); stroke: var(--line); stroke-width: 2; }
+  .floor-grid { stroke: var(--line); stroke-width: 1; opacity: .45; }
+  .table { fill: var(--panel-2); stroke: var(--line); stroke-width: 2; }
+  .door rect { fill: var(--bg); stroke: var(--muted); stroke-width: 1.5; }
+  .door.hot rect { stroke: var(--accent); }
+  .door text, .owner text.sub { fill: var(--muted); font-size: 12px; }
+  .label { fill: var(--text); font-size: 13px; font-weight: 650; }
+  .sub { fill: var(--muted); font-size: 11px; }
+  .seat { cursor: default; outline: none; }
+  .seat .chair { stroke-width: 3; transition: opacity .3s; }
+  .seat .initials { font-size: 14px; font-weight: 700; fill: var(--text); pointer-events: none; }
+  .seat.off .chair { opacity: .35; stroke-dasharray: 5 4; }
+  .seat.off .initials { opacity: .45; }
+  .seat .ring { fill: none; stroke-width: 2; opacity: 0; }
+  .seat.busy .ring { animation: breathe 2.2s ease-in-out infinite; }
+  @keyframes breathe { 0%, 100% { opacity: 0; r: 27px; } 50% { opacity: .6; r: 31px; } }
+  .seat:focus-visible .chair, .seat:hover .chair { stroke-width: 4; }
+  .badge circle { stroke: var(--panel); stroke-width: 2; }
+  .badge text { fill: #fff; font-size: 11px; font-weight: 800; }
+  .attn { font-size: 11px; font-weight: 650; }
+  .owner .chair { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 3; }
+  .owner .initials { fill: var(--accent); font-size: 13px; font-weight: 800; }
+  .stack rect { fill: var(--panel); stroke: var(--accent); stroke-width: 1.5; }
+  .bubble rect { fill: var(--panel); stroke: var(--line); stroke-width: 1.5; filter: drop-shadow(0 1px 2px rgb(0 0 0 / 12%)); }
+  .bubble text { fill: var(--text); font-size: 12px; }
+  .bubble { transition: opacity .4s; }
+  .note rect { stroke: var(--panel); stroke-width: 1.5; }
+  .note path { fill: var(--panel); opacity: .7; }
+
+  #hud { position: absolute; left: 16px; top: 12px; display: flex; gap: 8px; flex-wrap: wrap; pointer-events: none; }
+  #hud .tag { background: var(--panel); pointer-events: auto; }
+  #legend { position: absolute; left: 16px; bottom: 12px; display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
+    font-size: 12px; color: var(--muted); background: color-mix(in srgb, var(--panel) 85%, transparent); padding: 6px 10px; border-radius: var(--radius-sm); }
+  #legend svg { vertical-align: middle; margin-right: 4px; }
+  #tip { position: absolute; z-index: 5; max-width: 260px; pointer-events: none; font-size: 13px; padding: 10px 12px; }
+  #log { position: absolute; right: 12px; top: 12px; width: min(360px, calc(100% - 24px)); max-height: calc(100% - 24px); overflow: auto; z-index: 4; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  /* portrait: the room is scaled down to fit a phone, so its text is set larger to stay readable */
+  #room.portrait .label { font-size: 19px; } #room.portrait .sub, #room.portrait .attn { font-size: 15px; }
+  #room.portrait .door text, #room.portrait .owner text.sub { font-size: 16px; } #room.portrait .bubble text { font-size: 16px; }
+  #room.portrait .seat .initials { font-size: 16px; }
+  @media (max-width: 560px) { #legend { left: 8px; right: 8px; bottom: 8px; gap: 10px; } }
+  @media (prefers-reduced-motion: reduce) { .seat.busy .ring { opacity: .5; animation: none; } }
 </style>
 </head>
 <body>
 <header class="top">
   <a class="brand" href="/" data-brand-link><span data-brand>Visualizer</span></a>
   <nav><a href="/">Dashboard</a><a href="/exchange">Exchange</a><a href="/visualizer" class="on">Visualizer</a></nav>
-  <button id="toggle-debug">Data</button>
+  <button id="toggle-log" aria-expanded="false">Log</button>
 </header>
 <div id="stage">
-  <canvas id="scene"></canvas>
-  <aside id="debug" class="card small hidden"><h2>Live data (GET /api/viz)</h2><ul id="pulses" class="list"></ul></aside>
+  <svg id="room" role="img" aria-labelledby="room-title"><title id="room-title">The team around the table</title>
+    <g id="layer-room"></g><g id="layer-seats"></g><g id="layer-notes"></g><g id="layer-bubbles"></g>
+  </svg>
+  <div id="hud"></div>
+  <div id="legend">
+    <span><svg width="16" height="12"><rect x="1" y="1" width="14" height="10" rx="2" fill="var(--muted)"/></svg>message</span>
+    <span><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="var(--muted)"/></svg>background work</span>
+    <span><svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="3 2"/></svg>offline</span>
+    <span><svg width="14" height="14"><circle cx="7" cy="7" r="6" fill="var(--crit)"/></svg>needs you</span>
+  </div>
+  <div id="tip" class="card hidden" role="tooltip"></div>
+  <aside id="log" class="card small hidden"><h2>Live</h2><ul id="log-list" class="list"></ul></aside>
+  <div id="announce" class="sr" aria-live="polite"></div>
 </div>
 
 <script src="/static/app.js"></script>
 <script src="/static/viz-data.js"></script>
 <script>
-// ===== placeholder scene: nodes in a plain grid, a line per pulse that fades out. REPLACE ALL OF THIS. =====
-const canvas = document.getElementById("scene"), ctx = canvas.getContext("2d");
-const live = [];   // pulses being drawn: {from, to, born}
-let STATE = null;
+const NS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("room");
+const L = { room: layer("layer-room"), seats: layer("layer-seats"), notes: layer("layer-notes"), bubbles: layer("layer-bubbles") };
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let STATE = null, POS = new Map(), SIG = "", PORTRAIT = false;
+const seatEls = new Map(), bubbles = new Map(), flying = [];
+
+function layer(id) { return document.getElementById(id); }
+function el(tag, attrs = {}, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) if (v !== undefined && v !== null) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const short = (s, n) => (s = String(s || ""), s.length > n ? s.slice(0, n - 1) + "…" : s);
+const colorOf = (id) => {
+  const n = STATE && STATE.nodes.get(id);
+  if (!n) return "var(--muted)";
+  if (id === "you") return "var(--accent)";
+  return n.type === "agent" ? Crew.agentColor(n) : "var(--muted)";
+};
+
+// ----- layout: everything is placed in landscape coordinates (u along the table, v across), then
+//       turned for portrait screens so the table runs top to bottom. Text always stays upright.
+const W = 1000, H = 620;
+function P(u, v) { return PORTRAIT ? { x: v, y: u } : { x: u, y: v }; }
 
 function layout(state) {
-  // deterministic positions: agents on the top rows, lines on the bottom row
-  const w = canvas.clientWidth, h = canvas.clientHeight, pos = new Map();
-  const agents = [...state.nodes.values()].filter((n) => n.type === "agent");
-  const lines = [...state.nodes.values()].filter((n) => n.type === "line");
-  const place = (list, y) => list.forEach((n, i) => pos.set(n.id, { x: (w * (i + 1)) / (list.length + 1), y }));
-  place(agents, h * 0.35); place(lines, h * 0.75);
-  return pos;
+  const agents = [...state.nodes.values()].filter((n) => n.type === "agent").sort((a, b) => a.slot - b.slot);
+  const lines = [...state.nodes.values()].filter((n) => n.type === "line" && n.id !== "you");
+  const pos = new Map();
+  const top = Math.ceil(agents.length / 2), bottom = agents.length - top;
+  const t0 = 300, t1 = 860;                       // table ends (u)
+  agents.forEach((a, i) => {
+    const side = i % 2 === 0 ? "top" : "bottom", k = Math.floor(i / 2), count = side === "top" ? top : bottom;
+    const u = t0 + ((k + 0.5) * (t1 - t0)) / Math.max(count, 1);
+    pos.set(a.id, { ...P(u, side === "top" ? 205 : 415), side });
+  });
+  pos.set("you", { ...P(215, 310), side: "head" });
+  // doors: on the top wall (landscape) or the bottom wall (portrait), spread evenly
+  lines.forEach((ln, i) => pos.set(ln.id, PORTRAIT ? { x: 70 + ((i + 0.5) * (H - 140)) / lines.length, y: W - 34, side: "door" }
+                                                   : { x: 330 + ((i + 0.5) * 520) / lines.length, y: 34, side: "door" }));
+  return { pos, agents, lines, table: [P(t0 - 30, 255), P(t1 + 30, 365)] };
 }
 
-function render(now) {
-  const dpr = window.devicePixelRatio || 1;
-  if (canvas.width !== canvas.clientWidth * dpr) { canvas.width = canvas.clientWidth * dpr; canvas.height = canvas.clientHeight * dpr; }
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
-  if (!STATE) return requestAnimationFrame(render);
-  const css = getComputedStyle(document.documentElement), color = (v) => css.getPropertyValue(v).trim();
-  const pos = layout(STATE);
-  for (let i = live.length - 1; i >= 0; i--) {
-    const p = live[i], a = pos.get(p.from), b = pos.get(p.to), age = (now - p.born) / 1500;
-    if (age > 1 || !a || !b) { live.splice(i, 1); continue; }
-    ctx.globalAlpha = 1 - age; ctx.strokeStyle = color("--accent"); ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+// ----- static scene (rebuilt only when the team or the screen shape changes)
+function build(state) {
+  PORTRAIT = svg.clientHeight > svg.clientWidth * 1.1;
+  svg.setAttribute("viewBox", PORTRAIT ? `0 0 ${H} ${W}` : `0 0 ${W} ${H}`);
+  svg.classList.toggle("portrait", PORTRAIT);
+  const lay = layout(state);
+  POS = lay.pos;
+  for (const k of ["room", "seats"]) L[k].replaceChildren();
+  seatEls.clear();
+  const [w, h] = PORTRAIT ? [H, W] : [W, H];
+  el("rect", { x: 20, y: 20, width: w - 40, height: h - 40, rx: 18, class: "wall" }, L.room);
+  for (let g = 80; g < (PORTRAIT ? h : w) - 40; g += 60) {           // floorboards
+    const a = P(g, 26), b = P(g, (PORTRAIT ? w : h) - 26);
+    el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: "floor-grid" }, L.room);
   }
-  ctx.globalAlpha = 1; ctx.font = "13px " + color("--font"); ctx.textAlign = "center";
-  for (const n of STATE.nodes.values()) {
-    const p = pos.get(n.id);
-    // identity = the agent's palette colour; state = the ring (attention) and fill strength (offline is faint)
-    const c = n.type === "agent" ? Crew.agentColor(n) : "var(--muted)";
-    ctx.fillStyle = c.startsWith("var(") ? color(c.slice(4, -1)) : c;
-    ctx.globalAlpha = n.alive ? 1 : 0.35;
-    ctx.beginPath(); ctx.arc(p.x, p.y, n.type === "agent" ? 10 : 6, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 1;
-    if (n.attention) { ctx.strokeStyle = color(n.attention === "issue" ? "--warn" : "--crit"); ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(p.x, p.y, 15, 0, Math.PI * 2); ctx.stroke(); }
-    ctx.fillStyle = color("--text"); ctx.fillText(n.label, p.x, p.y + 26);
+  const [c0, c1] = lay.table;
+  el("rect", { x: Math.min(c0.x, c1.x), y: Math.min(c0.y, c1.y), width: Math.abs(c1.x - c0.x), height: Math.abs(c1.y - c0.y), rx: 22, class: "table" }, L.room);
+
+  for (const ln of lay.lines) {                                       // doors in the wall
+    const p = POS.get(ln.id), g = el("g", { class: "door", "data-id": ln.id }, L.room);
+    el("rect", { x: p.x - 26, y: PORTRAIT ? p.y + 2 : p.y - 16, width: 52, height: 14, rx: 3 }, g);
+    const t = el("text", { x: p.x, y: PORTRAIT ? p.y - 8 : p.y + 20, "text-anchor": "middle" }, g);
+    t.textContent = ln.label;
   }
-  requestAnimationFrame(render);
+
+  const you = POS.get("you"), og = el("g", { class: "owner" }, L.seats);   // your chair
+  el("circle", { cx: you.x, cy: you.y, r: 24, class: "chair" }, og);
+  el("text", { x: you.x, y: you.y + 5, "text-anchor": "middle", class: "initials" }, og).textContent = "You";
+  const stack = el("g", { class: "stack" }, og);
+  const sub = el("text", { x: you.x, y: you.y + 44, "text-anchor": "middle", class: "sub" }, og);
+  seatEls.set("you", { stack, sub, at: you });
+
+  for (const a of lay.agents) {
+    const p = POS.get(a.id), up = p.side === "top" && !PORTRAIT;
+    const g = el("g", { class: "seat", tabindex: 0, "data-id": a.id, role: "img" }, L.seats);
+    const ring = el("circle", { cx: p.x, cy: p.y, r: 27, class: "ring", style: `stroke:${colorOf(a.id)}` }, g);
+    const chair = el("circle", { cx: p.x, cy: p.y, r: 22, class: "chair",
+      style: `fill:color-mix(in srgb, ${colorOf(a.id)} 22%, var(--panel));stroke:${colorOf(a.id)}` }, g);
+    el("text", { x: p.x, y: p.y + 5, "text-anchor": "middle", class: "initials" }, g).textContent = Crew.initials(a.label);
+    const dy = up ? -1 : 1, base = up ? p.y - 34 : p.y + 42, lh = PORTRAIT ? 19 : 15;
+    const anchor = PORTRAIT ? { x: p.x + (p.side === "top" ? -32 : 32), y: p.y - 4, "text-anchor": p.side === "top" ? "end" : "start" }
+                            : { x: p.x, y: base, "text-anchor": "middle" };
+    const name = el("text", { ...anchor, class: "label" }, g); name.textContent = a.label;
+    const doing = el("text", { ...anchor, y: anchor.y + (PORTRAIT ? lh : dy * lh), class: "sub" }, g);
+    const attn = el("text", { ...anchor, y: anchor.y + (PORTRAIT ? 2 * lh : dy * 2 * lh), class: "attn" }, g);
+    const badge = el("g", { class: "badge" }, g);
+    el("circle", { cx: p.x + 17, cy: p.y - 17, r: 9 }, badge);
+    el("text", { x: p.x + 17, y: p.y - 13, "text-anchor": "middle" }, badge).textContent = "!";
+    seatEls.set(a.id, { g, ring, chair, doing, attn, badge, at: p });
+  }
 }
 
-// ===== data wiring (keep) =====
-const viz = VizData.start({ every: 2000 });
-viz.on("update", (state) => {
+// ----- per-poll updates (cheap: attributes and text only)
+function update(state) {
   STATE = state;
-  Crew.brand(state.brand || "Visualizer");
-  document.title = (state.brand || "") + " · Visualizer";
-});
-viz.on("pulse", (p) => {
-  live.push({ from: p.from, to: p.to, born: performance.now() });
-  const ul = document.getElementById("pulses");
-  ul.insertAdjacentHTML("afterbegin", `<li>${Crew.esc(p.from)} → ${Crew.esc(p.to)} <span class="tag">${Crew.esc(p.kind)}</span> ${Crew.esc(p.label)}</li>`);
-  while (ul.children.length > 60) ul.lastChild.remove();
-});
-document.getElementById("toggle-debug").onclick = () => document.getElementById("debug").classList.toggle("hidden");
-Crew.requireLogin().then(() => requestAnimationFrame(render));
+  const sig = [...state.nodes.keys()].join(",") + "|" + (svg.clientHeight > svg.clientWidth * 1.1);
+  if (sig !== SIG) { SIG = sig; build(state); }
+  let online = 0, agents = 0, need = 0;
+  for (const n of state.nodes.values()) {
+    if (n.type !== "agent") continue;
+    agents++; if (n.alive) online++;
+    const s = seatEls.get(n.id); if (!s) continue;
+    s.g.classList.toggle("off", !n.alive);
+    s.g.classList.toggle("busy", n.alive && n.busy && !REDUCED);
+    s.doing.textContent = n.alive ? short(n.doing, PORTRAIT ? 16 : 26) : "offline";
+    const at = { approval: ["needs your approval", "--crit"], crit: ["critical issue", "--crit"], issue: ["open issue", "--warn"] }[n.attention];
+    s.attn.textContent = at ? at[0] : "";
+    s.attn.style.fill = at ? `var(${at[1]})` : "";
+    s.badge.style.display = at ? "" : "none";
+    s.badge.querySelector("circle").style.fill = at ? `var(${at[1]})` : "";
+    if (at) need++;
+    s.g.setAttribute("aria-label", `${n.label}, ${n.role || "agent"}, ${n.alive ? "online" : "offline"}${at ? ", " + at[0] : ""}`);
+  }
+  const you = seatEls.get("you");                                     // papers waiting at your seat
+  you.stack.replaceChildren();
+  for (let i = 0; i < Math.min(state.approvals, 4); i++)
+    el("rect", { x: you.at.x + 26 + i * 2, y: you.at.y - 30 - i * 3, width: 18, height: 22, rx: 2 }, you.stack);
+  you.sub.textContent = state.approvals ? `${state.approvals} waiting for you` : "";
+  document.getElementById("hud").innerHTML =
+    `<span class="tag">${online} of ${agents} online</span>` +
+    (state.approvals ? `<a class="tag accent" href="/">${state.approvals} waiting for you</a>` : "") +
+    (need ? `<span class="tag">${need} need${need === 1 ? "s" : ""} a look</span>` : "");
+}
+
+// ----- notes and dots in flight
+function fly(p) {
+  const a = POS.get(p.from), b = POS.get(p.to);
+  if (!a || !b) return;
+  const g = el("g", { class: p.chat ? "note" : "dot" }, L.notes);
+  if (p.chat) {
+    el("rect", { x: -10, y: -7, width: 20, height: 14, rx: 2, style: `fill:${colorOf(p.from)}` }, g);
+    el("path", { d: "M4 -7 L10 -7 L10 -1 Z" }, g);
+  } else el("circle", { r: 4, style: `fill:${colorOf(p.from === "you" || !STATE.nodes.get(p.from) || STATE.nodes.get(p.from).type === "line" ? p.to : p.from)};opacity:.85` }, g);
+  // arc over the table: the control point is pulled toward the table's middle line
+  const mid = P(580, 310), cx = (a.x + b.x) / 2 * 0.6 + mid.x * 0.4, cy = (a.y + b.y) / 2 * 0.6 + mid.y * 0.4;
+  flying.push({ g, a, b, c: { x: cx, y: cy }, t0: performance.now() + flying.length * 90, dur: p.chat ? 1100 : 700, chat: p.chat });
+  if (p.chat) say(p);
+  const door = svg.querySelector(`.door[data-id="${CSS.escape(p.to)}"], .door[data-id="${CSS.escape(p.from)}"]`);
+  if (door) { door.classList.add("hot"); setTimeout(() => door.classList.remove("hot"), 900); }
+}
+
+function frame(now) {
+  for (let i = flying.length - 1; i >= 0; i--) {
+    const f = flying[i], t = (now - f.t0) / f.dur;
+    if (t < 0) { f.g.style.opacity = 0; continue; }
+    if (t >= 1 || REDUCED) {
+      if (REDUCED && t < 1) { f.g.setAttribute("transform", `translate(${f.b.x},${f.b.y})`); f.g.style.opacity = 1 - t; continue; }
+      f.g.remove(); flying.splice(i, 1); continue;
+    }
+    const e = t < .5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2, u = 1 - e;   // ease in-out along a quadratic curve
+    const x = u * u * f.a.x + 2 * u * e * f.c.x + e * e * f.b.x, y = u * u * f.a.y + 2 * u * e * f.c.y + e * e * f.b.y;
+    f.g.setAttribute("transform", `translate(${x},${y}) rotate(${f.chat ? (e - .5) * 24 : 0})`);
+    f.g.style.opacity = t > .85 ? (1 - t) / .15 : 1;
+  }
+  requestAnimationFrame(frame);
+}
+
+// ----- speech bubble over whoever is talking (one per speaker, fades after a few seconds)
+function say(p) {
+  const at = POS.get(p.from);
+  if (!at || (STATE.nodes.get(p.from) || {}).type === "line") return;
+  bubbles.get(p.from)?.remove();
+  const text = short(p.label, PORTRAIT ? 30 : 44), w = Math.min(PORTRAIT ? 420 : 300, 20 + text.length * (PORTRAIT ? 8.4 : 6.4));
+  const above = at.side !== "bottom" || PORTRAIT, bh = PORTRAIT ? 32 : 26;
+  const x = Math.max(28, Math.min((PORTRAIT ? H : W) - w - 28, at.x - w / 2)), y = above ? at.y - (at.side === "head" ? 66 : 96) : at.y + 82;
+  const g = el("g", { class: "bubble" }, L.bubbles);
+  el("rect", { x, y, width: w, height: bh, rx: bh / 2 }, g);
+  el("text", { x: x + 12, y: y + bh / 2 + 5 }, g).textContent = text;
+  bubbles.set(p.from, g);
+  setTimeout(() => { g.style.opacity = 0; setTimeout(() => { g.remove(); if (bubbles.get(p.from) === g) bubbles.delete(p.from); }, 450); }, 3800);
+}
+
+// ----- tooltip (hover or keyboard focus)
+const tip = document.getElementById("tip");
+function showTip(ev) {
+  const g = ev.target.closest(".seat"); if (!g || !STATE) return;
+  const n = STATE.nodes.get(g.dataset.id); if (!n) return;
+  tip.innerHTML = `<div class="row">${Crew.avatar({ ...n, name: n.label })}<div><b>${Crew.esc(n.label)}</b><div class="small muted">${Crew.esc(n.role || "")}</div></div></div>
+    <div class="small" style="margin-top:8px">${n.alive ? "Online" : "Offline"} · last seen ${Crew.ago(n.heartbeat)}</div>
+    ${n.doing ? `<div class="small muted">${Crew.esc(n.doing)}</div>` : ""}
+    ${n.attention ? `<div class="small lvl-${n.attention === "issue" ? "warn" : "crit"}">${n.attention === "approval" ? "Waiting for your approval" : n.attention === "crit" ? "Critical issue open" : "Issue open"}</div>` : ""}`;
+  const r = g.getBoundingClientRect(), s = document.getElementById("stage").getBoundingClientRect();
+  tip.classList.remove("hidden");
+  const left = Math.min(s.width - tip.offsetWidth - 8, Math.max(8, r.left - s.left + r.width / 2 - tip.offsetWidth / 2));
+  const top = r.top - s.top > tip.offsetHeight + 16 ? r.top - s.top - tip.offsetHeight - 8 : r.bottom - s.top + 8;
+  tip.style.left = left + "px"; tip.style.top = top + "px";
+}
+const hideTip = () => tip.classList.add("hidden");
+L.seats.addEventListener("pointerover", showTip); L.seats.addEventListener("pointerout", hideTip);
+L.seats.addEventListener("focusin", showTip); L.seats.addEventListener("focusout", hideTip);
+
+// ----- live log + screen-reader announcements for messages to you
+const nameOf = (id) => (STATE && STATE.nodes.get(id) || { label: id }).label;
+function log(p) {
+  const ul = document.getElementById("log-list");
+  ul.insertAdjacentHTML("afterbegin", `<li><span class="small muted">${Crew.time(p.t)}</span> <b>${Crew.esc(nameOf(p.from))}</b> → ${Crew.esc(nameOf(p.to))}
+    <span class="tag">${Crew.esc(p.kind)}</span><div>${Crew.esc(p.label)}</div></li>`);
+  while (ul.children.length > 80) ul.lastChild.remove();
+  if (p.chat && p.to === "you") document.getElementById("announce").textContent = `${nameOf(p.from)}: ${p.label}`;
+}
+document.getElementById("toggle-log").onclick = (ev) => {
+  const open = document.getElementById("log").classList.toggle("hidden") === false;
+  ev.target.setAttribute("aria-expanded", open);
+};
+
+// ----- wiring
+const viz = VizData.start({ every: 2000 });
+viz.on("update", (state) => { Crew.brand(state.brand || "Visualizer"); document.title = (state.brand || "") + " · Visualizer"; update(state); });
+viz.on("pulse", (p) => { if (STATE) { fly(p); log(p); } });
+new ResizeObserver(() => { if (STATE) { SIG = ""; update(STATE); } }).observe(svg);
+requestAnimationFrame(frame);
 </script>
 </body>
 </html>

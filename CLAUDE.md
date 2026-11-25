@@ -13,4 +13,5 @@
 - Run the tests after changes: `.venv/bin/python -m pytest -q`. Use `python -m crew demo` for visual work.
 - Style only through the tokens in `web/static/base.css`; brand rules are in BRAND.md. Agents are coloured by slot
   (`Crew.agentColor`), status colours are reserved for state.
+- `web/visualizer.html` is a sample ("The Room"); `web/visualizer-scaffold.html` is the blank starting point.
 - Never commit `.env` or `data/`.
