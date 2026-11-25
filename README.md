@@ -91,3 +91,7 @@ python -m crew demo 30    # fake traffic for 30 minutes (design without agents)
 ## Requirements
 
 Python 3.10+. Packages: FastAPI, uvicorn, httpx, PyYAML, anthropic (only for the `ANTHROPIC_API_KEY` fallback). No Node, no build step.
+
+## License
+
+MIT - see [LICENSE](LICENSE). The default brand (name, mark, colours) is a placeholder: replace it with your own.
