@@ -1,0 +1,25 @@
+# docker compose up -d   (run ./setup.sh or `python -m crew setpass` + `tokens` once first, so .env has a password and tokens)
+services:
+  hub:
+    build: .
+    env_file: .env
+    environment: [HOST=0.0.0.0, "ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost},hub"]
+    ports: ["127.0.0.1:8000:8000"]          # put a reverse proxy / tunnel in front for outside access
+    volumes: ["./data:/app/data", "./agents.yaml:/app/agents.yaml:ro"]
+    restart: unless-stopped
+  manager:
+    build: .
+    env_file: .env
+    environment: [CREW_URL=http://hub:8000]
+    command: ["python", "examples/manager.py"]
+    volumes: ["./data:/app/data"]
+    depends_on: [hub]
+    restart: unless-stopped
+  researcher:
+    build: .
+    env_file: .env
+    environment: [CREW_URL=http://hub:8000]
+    command: ["python", "examples/researcher.py"]
+    volumes: ["./data:/app/data"]
+    depends_on: [hub]
+    restart: unless-stopped

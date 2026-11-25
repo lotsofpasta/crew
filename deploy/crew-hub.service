@@ -1,0 +1,19 @@
+# /etc/systemd/system/crew-hub.service  - the hub. Code in /opt/crew, run as user "crew".
+[Unit]
+Description=Crew hub (dashboard, exchange, agent sync)
+After=network-online.target
+
+[Service]
+User=crew
+WorkingDirectory=/opt/crew
+EnvironmentFile=/opt/crew/.env
+ExecStart=/opt/crew/.venv/bin/python -m crew serve
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/crew/data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

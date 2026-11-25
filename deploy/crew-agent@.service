@@ -1,0 +1,23 @@
+# /etc/systemd/system/crew-agent@.service  - one unit per agent: systemctl enable --now crew-agent@manager
+# Runs /opt/crew/agents/<name>.py if it exists, else /opt/crew/examples/<name>.py.
+# Give each agent its own env file with only what it needs (CREW_URL, its AGENT_TOKEN_<KEY>, its LLM key):
+#   /etc/crew/<name>.env  (mode 600). The hub's .env is not readable by agents.
+[Unit]
+Description=Crew agent %i
+After=network-online.target crew-hub.service
+
+[Service]
+User=crew
+WorkingDirectory=/opt/crew
+EnvironmentFile=/etc/crew/%i.env
+Environment=CREW_ENV_FILE=/etc/crew/%i.env
+ExecStart=/bin/sh -c 'f=agents/%i.py; [ -f "$f" ] || f=examples/%i.py; exec /opt/crew/.venv/bin/python "$f"'
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/crew/data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

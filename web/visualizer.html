@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visualizer</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/static/base.css">
+<style>
+  /* ------------------------------------------------------------------------------------------------
+     VISUALIZER SCAFFOLD - this page is meant to be replaced. It shows that the data flows and nothing more.
+     Hand DESIGN.md to your AI (or read it yourself) and build your own scene here: canvas, SVG, WebGL,
+     whatever fits your brand. Keep /static/app.js + /static/viz-data.js for login and live data.
+     ------------------------------------------------------------------------------------------------ */
+  html, body { height: 100%; }
+  body { display: flex; flex-direction: column; }
+  #stage { flex: 1; position: relative; min-height: 0; }
+  #scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #debug { position: absolute; right: 12px; top: 12px; width: min(380px, calc(100% - 24px)); max-height: calc(100% - 24px); overflow: auto; }
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand" data-brand>Visualizer</span>
+  <nav><a href="/">Dashboard</a><a href="/exchange">Exchange</a><a href="/visualizer" class="on">Visualizer</a></nav>
+  <button id="toggle-debug">Data</button>
+</header>
+<div id="stage">
+  <canvas id="scene"></canvas>
+  <aside id="debug" class="card small hidden"><h2>Live data (GET /api/viz)</h2><ul id="pulses" class="list"></ul></aside>
+</div>
+
+<script src="/static/app.js"></script>
+<script src="/static/viz-data.js"></script>
+<script>
+// ===== placeholder scene: nodes in a plain grid, a line per pulse that fades out. REPLACE ALL OF THIS. =====
+const canvas = document.getElementById("scene"), ctx = canvas.getContext("2d");
+const live = [];   // pulses being drawn: {from, to, born}
+let STATE = null;
+
+function layout(state) {
+  // deterministic positions: agents on the top rows, lines on the bottom row
+  const w = canvas.clientWidth, h = canvas.clientHeight, pos = new Map();
+  const agents = [...state.nodes.values()].filter((n) => n.type === "agent");
+  const lines = [...state.nodes.values()].filter((n) => n.type === "line");
+  const place = (list, y) => list.forEach((n, i) => pos.set(n.id, { x: (w * (i + 1)) / (list.length + 1), y }));
+  place(agents, h * 0.35); place(lines, h * 0.75);
+  return pos;
+}
+
+function render(now) {
+  const dpr = window.devicePixelRatio || 1;
+  if (canvas.width !== canvas.clientWidth * dpr) { canvas.width = canvas.clientWidth * dpr; canvas.height = canvas.clientHeight * dpr; }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+  if (!STATE) return requestAnimationFrame(render);
+  const css = getComputedStyle(document.documentElement), color = (v) => css.getPropertyValue(v).trim();
+  const pos = layout(STATE);
+  for (let i = live.length - 1; i >= 0; i--) {
+    const p = live[i], a = pos.get(p.from), b = pos.get(p.to), age = (now - p.born) / 1500;
+    if (age > 1 || !a || !b) { live.splice(i, 1); continue; }
+    ctx.globalAlpha = 1 - age; ctx.strokeStyle = color("--accent"); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+  ctx.globalAlpha = 1; ctx.font = "13px " + color("--font"); ctx.textAlign = "center";
+  for (const n of STATE.nodes.values()) {
+    const p = pos.get(n.id);
+    ctx.fillStyle = n.attention ? color("--warn") : n.alive ? color("--ok") : color("--muted");
+    ctx.beginPath(); ctx.arc(p.x, p.y, n.type === "agent" ? 10 : 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = color("--text"); ctx.fillText(n.label, p.x, p.y + 26);
+  }
+  requestAnimationFrame(render);
+}
+
+// ===== data wiring (keep) =====
+const viz = VizData.start({ every: 2000 });
+viz.on("update", (state) => {
+  STATE = state;
+  document.querySelectorAll("[data-brand]").forEach((e) => (e.textContent = state.brand || "Visualizer"));
+  document.title = (state.brand || "") + " · Visualizer";
+});
+viz.on("pulse", (p) => {
+  live.push({ from: p.from, to: p.to, born: performance.now() });
+  const ul = document.getElementById("pulses");
+  ul.insertAdjacentHTML("afterbegin", `<li>${Crew.esc(p.from)} → ${Crew.esc(p.to)} <span class="tag">${Crew.esc(p.kind)}</span> ${Crew.esc(p.label)}</li>`);
+  while (ul.children.length > 60) ul.lastChild.remove();
+});
+document.getElementById("toggle-debug").onclick = () => document.getElementById("debug").classList.toggle("hidden");
+Crew.requireLogin().then(() => requestAnimationFrame(render));
+</script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/static/base.css">
+</head>
+<body>
+<!-- Sign-in. Shown when there is no valid session. -->
+<section id="login" class="login hidden">
+  <h1 id="login-brand">Sign in</h1>
+  <form id="login-form" class="card">
+    <label class="small muted" for="pw">Password</label>
+    <input id="pw" type="password" autocomplete="current-password" autofocus>
+    <div class="row" style="margin-top:10px"><button class="primary" type="submit">Sign in</button><span id="login-err" class="small lvl-crit"></span></div>
+  </form>
+</section>
+
+<div id="app" class="hidden">
+  <header class="top">
+    <span class="brand" data-brand>Dashboard</span>
+    <nav><a href="/" class="on">Dashboard</a><a href="/exchange">Exchange</a><a href="/visualizer">Visualizer</a></nav>
+    <span id="role" class="tag"></span>
+    <button id="signin" class="hidden">Sign in</button>
+    <button id="signout" class="hidden">Sign out</button>
+  </header>
+  <main>
+    <div class="grid">
+      <section class="card"><h2>Needs your approval</h2><ul id="approvals" class="list"></ul></section>
+      <section class="card"><h2>Open issues</h2><ul id="issues" class="list"></ul></section>
+      <section class="card"><h2>Team</h2><ul id="team" class="list"></ul></section>
+      <section class="card"><h2>Give the team a task</h2>
+        <form id="task" class="owner-only">
+          <select id="task-to"></select>
+          <input id="task-title" placeholder="What do you need?" style="margin-top:8px">
+          <textarea id="task-body" placeholder="Details (optional)" style="margin-top:8px"></textarea>
+          <button class="primary" style="margin-top:8px">File ticket</button> <span id="task-msg" class="small muted"></span>
+        </form>
+        <p class="small muted viewer-only">Sign in to give the team tasks.</p>
+      </section>
+    </div>
+    <div class="grid" style="margin-top:16px">
+      <section class="card"><h2>Agent feed</h2><ul id="feed" class="list"></ul><button id="more">Older</button></section>
+      <section class="card"><h2>Tickets</h2><ul id="tickets" class="list"></ul></section>
+      <section class="card"><h2>Activity log</h2><ul id="events" class="list small"></ul></section>
+    </div>
+  </main>
+</div>
+
+<script src="/static/app.js"></script>
+<script>
+const { api, esc, ago } = Crew;
+let ROLE = "viewer", oldest = 0, names = {};
+
+async function boot() {
+  const brand = await api("/api/brand").catch(() => ({ name: "Dashboard" }));
+  document.title = brand.name;
+  document.querySelectorAll("[data-brand]").forEach((e) => (e.textContent = brand.name));
+  document.getElementById("login-brand").textContent = brand.name;
+  let who;
+  try { who = await api("/api/whoami", { noRedirect: true }); } catch (e) { return showLogin(); }
+  if (new URLSearchParams(location.search).get("login") === "1" && who.role !== "owner") return showLogin();
+  ROLE = who.role;
+  document.getElementById("app").classList.remove("hidden");
+  document.getElementById("role").textContent = ROLE === "owner" ? "owner" : "view only";
+  document.getElementById(ROLE === "owner" ? "signout" : "signin").classList.remove("hidden");
+  document.querySelectorAll(".owner-only").forEach((e) => e.classList.toggle("hidden", ROLE !== "owner"));
+  document.querySelectorAll(".viewer-only").forEach((e) => e.classList.toggle("hidden", ROLE === "owner"));
+  Crew.poll(refresh, 5000);
+  loadFeed(true);
+}
+
+function showLogin() {
+  document.getElementById("login").classList.remove("hidden");
+  document.getElementById("app").classList.add("hidden");
+}
+
+document.getElementById("login-form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  try {
+    await Crew.login(document.getElementById("pw").value);
+    const next = new URLSearchParams(location.search).get("next");
+    location.href = next && next.startsWith("/") ? next : "/";
+  } catch (e) { document.getElementById("login-err").textContent = e.message; }
+});
+document.getElementById("signin").onclick = () => (location.href = "/?login=1");
+document.getElementById("signout").onclick = () => Crew.logout(false);
+
+function actions(r) {
+  if (ROLE !== "owner") return "";
+  return `<div class="row" style="margin-top:6px">
+    <button class="primary" data-act="approve" data-id="${r.id}">Approve: ${esc((r.action || {}).label || "action")}</button>
+    <button data-act="reject" data-id="${r.id}">Reject</button></div>`;
+}
+
+async function refresh() {
+  const d = await api("/api/agents");
+  names = Object.fromEntries(d.agents.map((a) => [a.key, a.name]));
+  const nm = (k) => esc(names[k] || (k === "you" ? "You" : k));
+  document.getElementById("approvals").innerHTML = d.approvals.map((r) =>
+    `<li><b>${nm(r.agent)}</b>: ${esc(r.title)}<div class="small muted">${esc(r.body || "")}</div>${actions(r)}</li>`).join("")
+    || `<li class="muted">Nothing waiting.</li>`;
+  const open = d.reports.filter((r) => r.status === "open" && r.action_state !== "proposed");
+  document.getElementById("issues").innerHTML = open.map((r) =>
+    `<li><span class="lvl-${esc(r.level)}">●</span> <b>${nm(r.agent)}</b>: ${esc(r.title)} <span class="small muted">${ago(r.updated_t)}</span>
+     ${ROLE === "owner" ? `<button class="small" data-act="dismiss" data-id="${r.id}">Dismiss</button>` : ""}</li>`).join("")
+    || `<li class="muted">All clear.</li>`;
+  document.getElementById("team").innerHTML = d.agents.map((a) =>
+    `<li><div class="row"><span class="dot ${a.alive ? "on" : ""}"></span><b>${esc(a.name)}</b><span class="muted small">${esc(a.role)}</span></div>
+     <div class="small muted">${esc(a.doing || "")} · last seen ${ago(a.heartbeat)}${a.counts.issues ? ` · ${a.counts.issues} open` : ""}</div></li>`).join("")
+    || `<li class="muted">No agents in agents.yaml.</li>`;
+  const sel = document.getElementById("task-to");
+  if (!sel.options.length) sel.innerHTML = d.agents.map((a) => `<option value="${esc(a.key)}">${esc(a.name)}</option>`).join("");
+  document.getElementById("tickets").innerHTML = d.tickets.slice(0, 15).map((t) =>
+    `<li><span class="tag">${esc(t.status)}</span> ${nm(t.src)} → ${nm(t.dst)}: ${esc(t.title)}
+     ${t.result_body ? `<pre>${esc(t.result_body)}</pre>` : ""}</li>`).join("") || `<li class="muted">No tickets this week.</li>`;
+  const ev = await api("/api/events?limit=20");
+  document.getElementById("events").innerHTML = ev.map((e) =>
+    `<li>${esc(e.title)} <span class="muted">${ago(e.t)}</span></li>`).join("") || `<li class="muted">Nothing yet.</li>`;
+}
+
+async function loadFeed(reset) {
+  const rows = await api(`/api/agents/feed?limit=20${!reset && oldest ? "&before=" + oldest : ""}`);
+  if (rows.length) oldest = rows[rows.length - 1].id;
+  const html = rows.map((r) => `<li><span class="tag">${esc(r.kind)}</span> <b>${esc(names[r.agent] || r.agent)}</b>: ${esc(r.title)}
+    <span class="small muted">${ago(r.t)}</span>${r.body ? `<pre>${esc(r.body)}</pre>` : ""}</li>`).join("");
+  const ul = document.getElementById("feed");
+  ul.innerHTML = (reset ? "" : ul.innerHTML) + html;
+  document.getElementById("more").disabled = rows.length < 20;
+}
+document.getElementById("more").onclick = () => loadFeed(false);
+
+document.addEventListener("click", async (ev) => {
+  const b = ev.target.closest("[data-act]");
+  if (!b) return;
+  b.disabled = true;
+  try { await api(`/api/agents/reports/${b.dataset.id}/${b.dataset.act}`, { method: "POST", body: {} }); await refresh(); }
+  catch (e) { alert(e.message); b.disabled = false; }
+});
+
+document.getElementById("task").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const msg = document.getElementById("task-msg");
+  try {
+    await api("/api/tickets", { method: "POST", body: { to: document.getElementById("task-to").value,
+      title: document.getElementById("task-title").value, body: document.getElementById("task-body").value } });
+    msg.textContent = "Filed."; ev.target.reset(); refresh();
+  } catch (e) { msg.textContent = e.message; }
+});
+
+boot();
+</script>
+</body>
+</html>

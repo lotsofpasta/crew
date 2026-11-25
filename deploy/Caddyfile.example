@@ -1,0 +1,5 @@
+# HTTPS in front of the hub with Caddy (automatic certificates). Set PUBLIC_URL=https://crew.example.com and
+# TRUST_PROXY_HEADERS=1 in .env.
+crew.example.com {
+    reverse_proxy 127.0.0.1:8000
+}

@@ -1,0 +1,50 @@
+# The team. Add an agent = add an entry here, run `python -m crew tokens` (gives it a sync token in .env),
+# then start its process (see examples/ and AGENTS.md). Nothing else in the code needs to change.
+#
+# key        short id, lowercase (used in URLs, @mentions and the signal log)
+# name       display name
+# role       one line, shown on its card
+# reports_to another agent's key, or "you" (the owner)
+# model      the agent's main model (its own process uses it; shown on the card)
+# light_model a cheaper model for lookups / routing / summaries
+# about / does / uses / limits / runs_on   free text for the agent's info panel
+# (any extra field you add is passed through to the dashboard and the visualizer API as-is: colour, icon, avatar ...)
+
+manager: manager          # who gets the owner's drops by default
+
+agents:
+  - key: manager
+    name: Manager
+    role: Team lead
+    reports_to: you
+    model: claude-opus-5-5
+    light_model: claude-sonnet-5-5
+    about: Reads what you send, decides who on the team should handle it, and keeps you posted.
+    does:
+      - Answers your messages and drops, or hands them to the right teammate as a ticket
+      - Watches the team's heartbeats and opens an issue when someone goes quiet
+      - Proposes actions that need your Approve before it carries them out
+    uses: [LLM]
+    limits: [Cannot act outside this app without your approval]
+    runs_on: this server
+
+  - key: researcher
+    name: Researcher
+    role: Research
+    reports_to: manager
+    model: claude-opus-5-5
+    light_model: claude-sonnet-5-5
+    about: Works the tickets the team (or you) file, and hands back a written answer.
+    does:
+      - Accepts or declines each ticket on its desk
+      - Researches the question and returns a deliverable to whoever asked
+    uses: [LLM]
+    limits: [Read-only - never changes anything]
+    runs_on: this server
+
+# "Lines": outside endpoints that show up on the exchange next to the agents (signals can go to or from them).
+# "you" (the owner) is always added.
+lines:
+  - {key: llm, label: LLM}
+  - {key: web, label: Web}
+  - {key: telegram, label: Telegram}
