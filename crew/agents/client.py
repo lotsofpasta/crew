@@ -140,6 +140,22 @@ class Agent:
         self._save()
         return res
 
+    def flush(self):
+        """Send queued ops now (from inside a handler, before slow work). Does not read the inbox - messages wait for
+        the next sync, so nothing is skipped. -> True if sent."""
+        if not self.outbox:
+            return True
+        sending = self.outbox[:200]
+        body = {"status": {"doing": self.doing, **self.stats}, "cursor": self.cursor, "ops": sending}
+        try:
+            r = self.http.post(f"{self.url}/api/agents/{self.key}/sync", json=body)
+            r.raise_for_status()
+        except httpx.HTTPError as e:
+            log.warning("%s: flush failed (%s); will retry", self.key, e)
+            return False
+        del self.outbox[:len(sending)]
+        return True
+
     # ---------------------------------------------------------------------------------- handlers
     def on_message(self, fn):
         self._handlers["message"].append(fn); return fn

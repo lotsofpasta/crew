@@ -42,6 +42,14 @@ agents:
     limits: [Read-only - never changes anything]
     runs_on: this server
 
+# More example agents in examples/ (see examples/README.md) - uncomment one, run `python -m crew tokens`,
+# then start it (e.g. AGENTS="manager researcher watchdog" ./run.sh):
+#
+#  - {key: watchdog, name: Watchdog, role: Checks the sites stay up, reports_to: manager}      # examples/watchdog.py
+#  - {key: scout, name: Scout, role: Watches the news, reports_to: manager}                    # examples/scout.mjs (Node)
+#  - {key: webresearch, name: Web researcher, role: Looks things up online, reports_to: manager}  # examples/web_researcher.py
+#  - {key: echo, name: Echo, role: Says things back, reports_to: manager}                      # examples/minimal.py echo
+
 # "Lines": outside endpoints that show up on the exchange next to the agents (signals can go to or from them).
 # "you" (the owner) is always added.
 lines:

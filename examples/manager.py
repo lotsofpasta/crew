@@ -9,6 +9,7 @@ Copy this file to start your own agent.
 """
 import logging
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -27,6 +28,8 @@ ROUTE = {"type": "object", "additionalProperties": False, "required": ["reply", 
 bot = Agent(KEY)
 brain = bot.brain(SYSTEM, daily_calls=60) if brainmod.available() else None
 quiet_since = {}
+STARTED = time.time()
+GRACE_S = 180          # teammates started at the same time get a few minutes to check in before "gone quiet"
 
 
 def teammates():
@@ -84,6 +87,8 @@ def approved(rep):
 
 @bot.on_tick
 def watch(_res):
+    if time.time() - STARTED < GRACE_S:
+        return
     for t in teammates():
         key = f"quiet:{t['key']}"
         if not t["alive"]:

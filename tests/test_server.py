@@ -10,6 +10,8 @@ R = {"Authorization": "Bearer " + "r" * 32}
 @pytest.fixture
 def client():
     auth.reset_limits()
+    server.conn.execute("DELETE FROM kv WHERE key LIKE 'sync_seq:%'")      # these tests number their ops from 1
+    server.conn.commit()
     return TestClient(server.app)
 
 

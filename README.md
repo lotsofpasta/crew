@@ -41,7 +41,7 @@ made-up traffic.
 | `agents.yaml` | **Your team.** Who the agents are, who reports to whom, the outside "lines" (LLM, web, ...). |
 | `crew/server.py` | The hub: login, dashboard API, exchange API, `/api/viz`, the agents' sync endpoint. |
 | `crew/agents/` | The framework: reports & approvals (`store`), the signal log (`signals`), tickets between agents, the owner's drop box, the sync protocol, the Python agent client, the LLM brain. |
-| `examples/` | Two example agents - a manager and a researcher. Copy one to start your own. |
+| `examples/` | Example agents: a minimal one, a manager, a researcher, a URL watchdog, a Node.js feed scout and a web-search researcher - see [examples/README.md](examples/README.md). |
 | `web/` | The pages: `index.html` (dashboard), `exchange.html`, `visualizer.html` (sample: The Room), `visualizer-scaffold.html` (blank), `static/` (shared JS, CSS tokens, brand files). |
 | `deploy/` | systemd units, Caddy example, notes for Docker / VPS / tunnels. |
 | `AGENTS.md` | How to write an agent (in any language) and the full sync protocol. |

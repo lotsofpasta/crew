@@ -62,6 +62,12 @@ The brain: `brain.ask(prompt, json_schema)` returns parsed JSON; `light=True` us
 budget stops a runaway loop (`daily_calls=`); `check_numbers=lambda r: [r["summary"]]` rejects an answer that
 contains a number that was not in the prompt (compute numbers in code, let the model explain them).
 
+Everything you queue goes out on the next sync. Before a slow task, `bot.flush()` sends what is queued right away
+(e.g. "accepted") without reading the inbox early.
+
+More complete examples - a URL watchdog, a Node.js feed reader, a web-search researcher - are in
+[examples/README.md](examples/README.md).
+
 ## 3. Run it
 
 - Locally: `python agents/scout.py` (or add it to `AGENTS="manager researcher scout" ./run.sh`).
@@ -69,6 +75,8 @@ contains a number that was not in the prompt (compute numbers in code, let the m
 - Elsewhere: the agent's machine needs only `CREW_URL=https://your-hub` and `AGENT_TOKEN_SCOUT`.
 
 ## The sync protocol (for other languages)
+
+A complete agent in Node.js with no packages is in [examples/scout.mjs](examples/scout.mjs) - use it as the reference.
 
 `POST /api/agents/<key>/sync`, header `Authorization: Bearer <AGENT_TOKEN_KEY>`, JSON body:
 
