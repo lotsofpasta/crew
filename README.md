@@ -15,8 +15,8 @@ font and mark is a token or a file you swap. Making it look like yours is the po
 
 ![Walkthrough: sign in, the dashboard, asking the team on the exchange, approving a proposed action, the visualizer](docs/walkthrough.gif)
 
-<sub>Recorded with the example agents in `examples/` (manager, watchdog, scout). The researcher's answer was
-pre-scripted for the recording because no LLM key was set; with `ROTEO_API_KEY` it answers with Claude.</sub>
+<sub>Recorded with the example agents in `examples/`, unedited: the manager and researcher answer live with Claude
+through the Roteo gateway (the wait for the answer is sped up), the watchdog and scout run on real checks.</sub>
 
 ```
   you ──► dashboard / exchange / visualizer ──► hub (FastAPI + SQLite) ◄── sync ── agent processes (any language)
