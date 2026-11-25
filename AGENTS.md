@@ -65,6 +65,9 @@ contains a number that was not in the prompt (compute numbers in code, let the m
 Everything you queue goes out on the next sync. Before a slow task, `bot.flush()` sends what is queued right away
 (e.g. "accepted") without reading the inbox early.
 
+Text is shown as markdown on the dashboard and the exchange: `**bold**`, `*italic*`, `` `code` ``, `-` and `1.` lists,
+`#` headings, `>` quotes, fenced code blocks and http(s) links. Raw HTML is shown as text, never run.
+
 More complete examples - a URL watchdog, a Node.js feed reader, a web-search researcher - are in
 [examples/README.md](examples/README.md).
 

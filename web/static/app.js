@@ -1,5 +1,5 @@
 // Shared by every page: sign-in, API calls, polling, small helpers. No framework, no build step.
-// Pages use: Crew.api(path, {method, body}), Crew.requireLogin(), Crew.poll(fn, ms), Crew.esc(s), Crew.ago(t)
+// Pages use: Crew.api(path, {method, body}), Crew.requireLogin(), Crew.poll(fn, ms), Crew.esc(s), Crew.md(text) / Crew.mdInline(line) (safe markdown -> HTML), Crew.ago(t)
 (function () {
   const TOKEN_KEY = "crew_token";
   const store = {
@@ -51,6 +51,58 @@
   }
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  // Markdown for agent text: escapes everything first, then adds a small, safe subset - paragraphs, # headings,
+  // - / 1. lists, > quotes, ``` code blocks, `code`, **bold**, *italic*, [links](https://...) and bare URLs.
+  // No raw HTML gets through, and only http(s) links are made clickable.
+  function inline(s) {
+    const codes = [];
+    s = s.replace(/`([^`\n]+)`/g, (_, c) => `\u0000${codes.push(c) - 1}\u0000`);       // keep code spans untouched
+    s = s.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, t, u) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${t}</a>`)
+      .replace(/(^|[\s(])(https?:\/\/[^\s<)]+[^\s<).,;:!?'"])/g, (_, p, u) => `${p}<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`)
+      .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>").replace(/__([^_\n]+)__/g, "<strong>$1</strong>")
+      .replace(/(^|[^*\w])\*([^*\s][^*\n]*?)\*(?!\w)/g, "$1<em>$2</em>").replace(/(^|[^_\w])_([^_\s][^_\n]*?)_(?!\w)/g, "$1<em>$2</em>");
+    return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[i]}</code>`);
+  }
+  function md(text) {
+    const lines = esc(text).replace(/\r\n?/g, "\n").split("\n"), out = [];
+    let i = 0;
+    while (i < lines.length) {
+      const l = lines[i];
+      if (/^\s*```/.test(l)) {                                                        // fenced code
+        const code = [];
+        for (i++; i < lines.length && !/^\s*```/.test(lines[i]); i++) code.push(lines[i]);
+        out.push(`<pre><code>${code.join("\n")}</code></pre>`); i++; continue;
+      }
+      let m;
+      if ((m = l.match(/^\s*(#{1,6})\s+(.*)$/))) { out.push(`<p class="md-h">${inline(m[2])}</p>`); i++; continue; }
+      if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(l)) { out.push("<hr>"); i++; continue; }
+      if (/^\s*&gt;\s?/.test(l)) {
+        const q = [];
+        for (; i < lines.length && /^\s*&gt;\s?/.test(lines[i]); i++) q.push(lines[i].replace(/^\s*&gt;\s?/, ""));
+        out.push(`<blockquote>${md_unesc(q)}</blockquote>`); continue;
+      }
+      if ((m = l.match(/^\s*([-*+]|\d+[.)])\s+/))) {                                 // a list: one kind per block
+        const ordered = /\d/.test(m[1]), items = [];
+        const re = ordered ? /^\s*\d+[.)]\s+(.*)$/ : /^\s*[-*+]\s+(.*)$/;
+        for (; i < lines.length; i++) {
+          const x = lines[i].match(re);
+          if (x) items.push(inline(x[1]));
+          else if (items.length && /^\s{2,}\S/.test(lines[i])) items[items.length - 1] += " " + inline(lines[i].trim());
+          else break;
+        }
+        out.push(`<${ordered ? "ol" : "ul"}>${items.map((x) => `<li>${x}</li>`).join("")}</${ordered ? "ol" : "ul"}>`); continue;
+      }
+      if (!l.trim()) { i++; continue; }
+      const para = [];                                                               // a paragraph runs to a blank line or a block
+      for (; i < lines.length && lines[i].trim() && !/^\s*(```|#{1,6}\s|&gt;|[-*+]\s|\d+[.)]\s)/.test(lines[i]); i++) para.push(inline(lines[i]));
+      if (!para.length) { out.push(`<p>${inline(l)}</p>`); i++; continue; }
+      out.push(`<p>${para.join("<br>")}</p>`);
+    }
+    return `<div class="md">${out.join("")}</div>`;
+  }
+  // quotes hold already-escaped lines: render them without escaping twice
+  const md_unesc = (q) => md(q.join("\n").replace(/&lt;|&gt;|&quot;|&#39;|&amp;/g, (e) => ({ "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'", "&amp;": "&" }[e])));
   function ago(t) {
     if (!t) return "never";
     const s = Math.max(0, (Date.now() - t) / 1000);
@@ -81,5 +133,5 @@
     });
   }
 
-  window.Crew = { api, login, logout, requireLogin, poll, esc, ago, time, token: store, agentColor, initials, avatar, brand };
+  window.Crew = { api, login, logout, requireLogin, poll, esc, md, mdInline: (s) => inline(esc(s)), ago, time, token: store, agentColor, initials, avatar, brand };
 })();

@@ -85,7 +85,7 @@ function chip(k) {
 function chatLine(s) {
   return `<li data-id="${s.id}"><span class="small muted">${time(s.t)}</span>
     ${chip(s.src)}<span class="who">${esc(nameOf(s.src))}</span> → ${esc(nameOf(s.dst))} <span class="tag">${esc(s.kind)}</span>
-    <div class="${s.level ? "lvl-" + esc(s.level) : ""}">${esc(s.label)}</div>${s.text ? `<pre>${esc(s.text)}</pre>` : ""}</li>`;
+    <div class="${s.level ? "lvl-" + esc(s.level) : ""}">${Crew.mdInline(s.label)}</div>${s.text ? Crew.md(s.text) : ""}</li>`;
 }
 
 async function tick() {

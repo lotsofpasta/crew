@@ -80,8 +80,8 @@ main { max-width: 1240px; margin: 0 auto; padding: 20px 16px 40px; }
 .small { font-size: 13px; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .list { list-style: none; margin: 0; padding: 0; }
-.list li { padding: 10px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
-.list li:first-child { border-top: 0; padding-top: 0; }
+.list > li { padding: 10px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.list > li:first-child { border-top: 0; padding-top: 0; }
 .hidden { display: none !important; }
 
 /* ---------------------------------------------------------------------------------------------- bits */
@@ -91,6 +91,17 @@ main { max-width: 1240px; margin: 0 auto; padding: 20px 16px 40px; }
 .tag { font-size: 12px; line-height: 18px; padding: 0 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
 .tag.accent { border-color: transparent; background: var(--accent-soft); color: var(--accent); }
 pre, code { font-family: var(--mono); font-size: 12.5px; }
+/* rendered markdown (Crew.md): agent answers on the exchange */
+.md { margin: 6px 0 0; padding: 8px 12px; background: var(--panel-2); border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+.md > :first-child { margin-top: 0; } .md > :last-child { margin-bottom: 0; }
+.md p, .md ul, .md ol, .md blockquote, .md pre { margin: 0 0 8px; }
+.md ul, .md ol { padding-left: 20px; } .md ul { list-style: disc; } .md li + li { margin-top: 2px; }
+.md .md-h { font-weight: 600; margin-top: 10px; }
+.md code { background: var(--panel); padding: 1px 4px; border-radius: 4px; }
+.md pre { background: var(--panel); } .md pre code { padding: 0; background: none; }
+.md blockquote { border-left: 3px solid var(--line); padding-left: 10px; color: var(--muted); }
+.md hr { border: 0; border-top: 1px solid var(--line); margin: 10px 0; }
+.md blockquote .md { margin: 0; padding: 0; background: none; }
 pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0 0; padding: 8px 10px; background: var(--panel-2); border-radius: var(--radius-sm); }
 
 /* agent avatar: initials on the agent's colour; status shown by the small dot, never by the avatar colour */

@@ -123,7 +123,7 @@ async function refresh() {
   if (!sel.options.length) sel.innerHTML = d.agents.map((a) => `<option value="${esc(a.key)}">${esc(a.name)}</option>`).join("");
   document.getElementById("tickets").innerHTML = d.tickets.slice(0, 15).map((t) =>
     `<li><span class="tag">${esc(t.status)}</span> ${nm(t.src)} → ${nm(t.dst)}: ${esc(t.title)}
-     ${t.result_body ? `<pre>${esc(t.result_body)}</pre>` : ""}</li>`).join("") || `<li class="muted">No tickets this week.</li>`;
+     ${t.result_body ? Crew.md(t.result_body) : ""}</li>`).join("") || `<li class="muted">No tickets this week.</li>`;
   const ev = await api("/api/events?limit=20");
   document.getElementById("events").innerHTML = ev.map((e) =>
     `<li>${esc(e.title)} <span class="muted">${ago(e.t)}</span></li>`).join("") || `<li class="muted">Nothing yet.</li>`;
@@ -133,7 +133,7 @@ async function loadFeed(reset) {
   const rows = await api(`/api/agents/feed?limit=20${!reset && oldest ? "&before=" + oldest : ""}`);
   if (rows.length) oldest = rows[rows.length - 1].id;
   const html = rows.map((r) => `<li><span class="tag">${esc(r.kind)}</span> <b>${esc(names[r.agent] || r.agent)}</b>: ${esc(r.title)}
-    <span class="small muted">${ago(r.t)}</span>${r.body ? `<pre>${esc(r.body)}</pre>` : ""}</li>`).join("");
+    <span class="small muted">${ago(r.t)}</span>${r.body ? Crew.md(r.body) : ""}</li>`).join("");
   const ul = document.getElementById("feed");
   ul.innerHTML = (reset ? "" : ul.innerHTML) + html;
   document.getElementById("more").disabled = rows.length < 20;
