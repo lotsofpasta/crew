@@ -1,6 +1,6 @@
 """Example agent: works the tickets on its desk and hands back a written answer. Run: python examples/researcher.py
 
-With ANTHROPIC_API_KEY set it answers with Claude; without it, it hands back a placeholder so you can see the flow.
+With ROTEO_API_KEY (or ANTHROPIC_API_KEY) set it answers with Claude; without it, it hands back a placeholder so you can see the flow.
 """
 import logging
 import sys
@@ -28,7 +28,7 @@ def work(t):
     task = t["title"] + ("\n\n" + t["body"] if t.get("body") else "")
     if not brain:
         bot.accept(t["id"], "On it (no LLM key, so this will be a placeholder).")
-        bot.finish(t["id"], "Placeholder answer", f"Set ANTHROPIC_API_KEY to get a real answer to:\n{task}")
+        bot.finish(t["id"], "Placeholder answer", f"Set ROTEO_API_KEY to get a real answer to:\n{task}")
         return
     try:
         r = brain.ask(f"Task from {t['src']}:\n{task}", ANSWER)

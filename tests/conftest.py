@@ -13,7 +13,7 @@ os.environ.update({
     "LOCAL_ROLE": "viewer",
     "VIEWER_KEY": "v" * 30,
 })
-for k in ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "ANTHROPIC_API_KEY"):
+for k in ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ROTEO_API_KEY", "BRAVE_API_KEY"):
     os.environ.pop(k, None)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 

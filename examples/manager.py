@@ -1,7 +1,7 @@
 """Example agent: the team lead. Run: python examples/manager.py
 
 Shows every part of the protocol:
-  - answers the owner's messages and drops (with Claude if ANTHROPIC_API_KEY is set, else a simple rule)
+  - answers the owner's messages and drops (with Claude if ROTEO_API_KEY or ANTHROPIC_API_KEY is set, else a simple rule)
   - hands work to a teammate as a ticket, and passes the answer back to the owner
   - opens an issue when a teammate goes quiet, with a proposed action that waits for the owner's Approve,
     carries the action out once approved, and resolves the issue when the teammate is back

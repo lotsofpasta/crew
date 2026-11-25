@@ -76,3 +76,31 @@ def test_brain_budget_and_retry(tmp_path, monkeypatch):
     b.ask("x", {}); 
     with pytest.raises(brain.BudgetSpent):
         b.ask("x", {})
+
+
+def test_roteo_provider(monkeypatch):
+    """ROTEO_API_KEY wins; the schema goes into the instructions; fenced JSON still parses."""
+    from crew.agents import brain
+    assert brain.provider() is None
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "a")
+    assert brain.provider() == "anthropic"
+    monkeypatch.setenv("ROTEO_API_KEY", "r")
+    assert brain.provider() == "roteo"
+    sent = {}
+
+    class R:
+        status_code = 200
+        def json(self):
+            return {"model": "claude-sonnet-5-5", "usage": {"prompt_tokens": 7, "completion_tokens": 3},
+                    "choices": [{"finish_reason": "stop", "message": {"content": '```json\n{"hi": "there"}\n```'}}]}
+
+    def post(url, json, headers, timeout):
+        sent.update(url=url, body=json, auth=headers["Authorization"])
+        return R()
+    import httpx
+    monkeypatch.setattr(httpx, "post", post)
+    b = brain.Brain("t-roteo", "Be brief.", daily_calls=5)
+    assert b.ask("say hi", {"type": "object", "properties": {"hi": {"type": "string"}}}) == {"hi": "there"}
+    assert sent["url"].endswith("/chat/completions") and sent["auth"] == "Bearer r"
+    assert '"hi"' in sent["body"]["messages"][0]["content"]
+    assert b.usage()["in"] == 7

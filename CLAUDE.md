@@ -9,7 +9,7 @@
   assets only; add libraries under `web/static/` rather than from a CDN.
 - Owner-only writes use the `owner` dependency in `crew/server.py`; reads use `auth`. A viewer must never be able to
   change anything.
-- LLM calls go through `crew/agents/brain.py` (official Anthropic SDK, structured JSON output, daily budget).
+- LLM calls go through `crew/agents/brain.py` (Roteo gateway by default - `ROTEO_API_KEY`, OpenAI-style; Anthropic SDK as fallback - structured JSON output, daily budget).
 - Run the tests after changes: `.venv/bin/python -m pytest -q`. Use `python -m crew demo` for visual work.
 - Style only through the tokens in `web/static/base.css`; brand rules are in BRAND.md. Agents are coloured by slot
   (`Crew.agentColor`), status colours are reserved for state.

@@ -11,7 +11,7 @@ there, commented out), run `python -m crew tokens`, then start it - on its own, 
 | [`researcher.py`](researcher.py) | Python | optional | Working a ticket desk: accept / decline, answer with a structured Claude call. |
 | [`watchdog.py`](watchdog.py) | Python | no | Real monitoring: URL checks as activity pulses, issues that open, escalate (warn → crit) and resolve themselves, a "mute for 24h" action you approve. |
 | [`scout.mjs`](scout.mjs) | **Node.js** | no | The protocol from another language with zero packages: plain `fetch()` to the sync endpoint, RSS / Atom feeds, new items passed to its lead. Use it as the reference for Go, Rust, a shell script... |
-| [`web_researcher.py`](web_researcher.py) | Python | **yes** | Claude with the server-side web search tool: every search shows up as a pulse to the Web door; answers come back with sources. |
+| [`web_researcher.py`](web_researcher.py) | Python | **yes** | Claude researching on the live web (Roteo + Brave Search, or Claude's own search tool with an Anthropic key): every search shows up as a pulse to the Web door; answers come back with sources. |
 
 ## Settings
 
@@ -19,8 +19,8 @@ there, commented out), run `python -m crew tokens`, then start it - on its own, 
 |---|---|
 | watchdog | `WATCH_URLS` (comma separated), `WATCH_EVERY` (s, default 60), `WATCH_TIMEOUT` (s) |
 | scout | `SCOUT_FEEDS` (comma separated), `SCOUT_EVERY` (s, default 600) |
-| web_researcher | `ANTHROPIC_API_KEY`, `WEBRESEARCH_SEARCHES` (per ticket, default 5), `WEBRESEARCH_PER_DAY` (default 30) |
-| manager, researcher | `ANTHROPIC_API_KEY` optional - without it they answer with simple rules |
+| web_researcher | `ROTEO_API_KEY` + `BRAVE_API_KEY` (or `ANTHROPIC_API_KEY`), `WEBRESEARCH_SEARCHES` (per ticket, default 5), `WEBRESEARCH_PER_DAY` (default 30) |
+| manager, researcher | `ROTEO_API_KEY` optional - without it they answer with simple rules |
 
 Each agent's key defaults to its file name's role (`watchdog`, `scout`, `webresearch`); run a second copy under
 another key with `WATCHDOG_KEY=...`, `SCOUT_KEY=...` or `WEBRESEARCH_KEY=...`.

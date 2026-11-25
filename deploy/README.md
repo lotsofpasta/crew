@@ -9,7 +9,7 @@ Pick one:
 sudo useradd -r -m -d /opt/crew crew
 sudo -u crew git clone <your repo> /opt/crew && cd /opt/crew && sudo -u crew ./setup.sh
 sudo cp deploy/crew-hub.service deploy/crew-agent@.service /etc/systemd/system/
-sudo mkdir -p /etc/crew   # one env file per agent: CREW_URL, AGENT_TOKEN_<KEY>, ANTHROPIC_API_KEY
+sudo mkdir -p /etc/crew   # one env file per agent: CREW_URL, AGENT_TOKEN_<KEY>, ROTEO_API_KEY
 sudo systemctl daemon-reload && sudo systemctl enable --now crew-hub crew-agent@manager crew-agent@researcher
 ```
 

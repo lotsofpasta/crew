@@ -75,7 +75,7 @@ def check():
     ok = lambda b: "ok " if b else "-- "  # noqa: E731
     print(f"{ok(True)}brand: {config.BRAND_NAME}   database: {config.DB_PATH}   timezone: {config.TIMEZONE}")
     print(f"{ok(auth.owner_login_ready())}owner password (python -m crew setpass)")
-    print(f"{ok(brain.available())}LLM key (ANTHROPIC_API_KEY) - without it the example agents answer with simple rules")
+    print(f"{ok(brain.available())}LLM key: {brain.provider() or 'none - set ROTEO_API_KEY; without it the example agents answer with simple rules'}")
     from . import notify
     print(f"{ok(notify.enabled())}Telegram alerts (optional)")
     for a in registry.team():

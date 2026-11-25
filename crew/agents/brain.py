@@ -9,11 +9,15 @@ The number check (check_numbers=True): every number should be computed in Python
 the model explains and recommends. A reply containing a number that is not in the input (rounding allowed) is
 rejected and retried once with the offending numbers named.
 
-Provider: the official Anthropic SDK. Key: ANTHROPIC_API_KEY (or any credential the SDK resolves). To go through a
-gateway that speaks the Anthropic API, set ANTHROPIC_BASE_URL.
+Providers (the first one with a key wins):
+  roteo      ROTEO_API_KEY - the Roteo gateway (https://roteo.ai), OpenAI-style chat/completions at ROTEO_URL
+             (default https://api.roteo.ai/v1). Any other OpenAI-style gateway works the same way: point ROTEO_URL at it.
+  anthropic  ANTHROPIC_API_KEY - the official Anthropic SDK, straight to Claude (ANTHROPIC_BASE_URL for a gateway that
+             speaks the Anthropic API).
 """
 import json
 import logging
+import os
 import re
 from pathlib import Path
 
@@ -23,6 +27,7 @@ log = logging.getLogger("crew.brain")
 MODEL = config.env("CREW_MODEL", "claude-opus-5-5")
 LIGHT_MODEL = config.env("CREW_LIGHT_MODEL", "claude-sonnet-5-5")
 EFFORT = config.env("CREW_EFFORT", "high")
+ROTEO_URL = config.env("ROTEO_URL", "https://api.roteo.ai/v1").rstrip("/")
 
 
 class BudgetSpent(Exception):
@@ -61,6 +66,72 @@ def unverified(output, source):
 
 
 # ------------------------------------------------------------------------------------------------ provider
+def provider():
+    """'roteo', 'anthropic' or None - which LLM the agents use."""
+    if os.environ.get("ROTEO_API_KEY"):
+        return "roteo"
+    if os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"):
+        return "anthropic"
+    return None
+
+
+def available():
+    return provider() is not None
+
+
+def call_llm(system, user, schema, model):
+    """One structured call through whichever provider is configured. -> (text, (in, out), served_model)."""
+    p = provider()
+    if p == "roteo":
+        return call_roteo(system, user, schema, model)
+    if p == "anthropic":
+        return call_claude(system, user, schema, model)
+    raise RuntimeError("no LLM key: set ROTEO_API_KEY (or ANTHROPIC_API_KEY) in .env")
+
+
+# roteo ------------------------------------------------------------------------------------------
+class GatewayError(Exception):
+    pass
+
+
+def roteo_chat(messages, model, tools=None, max_tokens=16000, timeout=300.0):
+    """One OpenAI-style chat/completions call to the gateway. -> the response JSON. Retries 429/5xx twice."""
+    import time
+    import httpx
+    body = {"model": model, "messages": messages, "max_tokens": max_tokens}
+    if tools:
+        body["tools"] = tools
+    headers = {"Authorization": "Bearer " + os.environ["ROTEO_API_KEY"]}
+    for attempt in range(3):
+        try:
+            r = httpx.post(ROTEO_URL + "/chat/completions", json=body, headers=headers, timeout=timeout)
+        except httpx.TransportError:
+            if attempt == 2:
+                raise
+            time.sleep(2 ** attempt)
+            continue
+        if r.status_code == 200:
+            return r.json()
+        if r.status_code in (429, 500, 502, 503, 504) and attempt < 2:
+            time.sleep(2 ** attempt)
+            continue
+        hint = {401: "the gateway rejected ROTEO_API_KEY", 402: "the Roteo wallet is out of funds - top it up"}.get(r.status_code, "")
+        raise GatewayError(f"HTTP {r.status_code}{': ' + hint if hint else ''} {r.text[:200]}")
+
+
+def call_roteo(system, user, schema, model):
+    # The gateway doesn't enforce response_format, so the schema goes in the instructions and ask() parses the JSON.
+    sys_msg = (system + "\n\nReply with only one JSON object (no prose, no code fences) matching this JSON schema:\n"
+               + json.dumps(schema))
+    j = roteo_chat([{"role": "system", "content": sys_msg}, {"role": "user", "content": user}], model)
+    choice = (j.get("choices") or [{}])[0]
+    if choice.get("finish_reason") in ("content_filter", "refusal"):
+        raise Refused("model declined")
+    u = j.get("usage") or {}
+    return (choice.get("message") or {}).get("content") or "", (u.get("prompt_tokens", 0), u.get("completion_tokens", 0)), j.get("model") or model
+
+
+# anthropic --------------------------------------------------------------------------------------
 _client = None
 
 
@@ -86,11 +157,6 @@ def call_claude(system, user, schema, model):
     return text, (resp.usage.input_tokens, resp.usage.output_tokens), getattr(resp, "model", model)
 
 
-def available():
-    import os
-    return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
-
-
 # ------------------------------------------------------------------------------------------------ brain
 class Brain:
     """ask() = one checked structured call, counted against a daily budget kept in data/budget-<agent>.json.
@@ -103,7 +169,7 @@ class Brain:
         self.model, self.light_model = model or MODEL, light_model or LIGHT_MODEL
         self.daily_calls = daily_calls
         self.light_calls = 2 * daily_calls if light_calls is None else light_calls
-        self.on_call, self._call = on_call, call or call_claude
+        self.on_call, self._call = on_call, call or call_llm
         self.path = Path(config.DATA_DIR) / f"budget-{agent}.json"
 
     # budget ----------------------------------------------------------------------------------------

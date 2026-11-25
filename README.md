@@ -16,12 +16,12 @@ font and mark is a token or a file you swap. Making it look like yours is the po
 ![Walkthrough: sign in, the dashboard, asking the team on the exchange, approving a proposed action, the visualizer](docs/walkthrough.gif)
 
 <sub>Recorded with the example agents in `examples/` (manager, watchdog, scout). The researcher's answer was
-pre-scripted for the recording because no LLM key was set; with `ANTHROPIC_API_KEY` it answers with Claude.</sub>
+pre-scripted for the recording because no LLM key was set; with `ROTEO_API_KEY` it answers with Claude.</sub>
 
 ```
   you ──► dashboard / exchange / visualizer ──► hub (FastAPI + SQLite) ◄── sync ── agent processes (any language)
                                                      │                                 │
-                                              Telegram alerts (opt.)              Claude (Anthropic SDK)
+                                              Telegram alerts (opt.)              Claude (via Roteo)  
 ```
 
 ## Quick start (5 minutes)
@@ -33,7 +33,8 @@ git clone <this repo> my-crew && cd my-crew
 ```
 
 Open http://127.0.0.1:8000, sign in, and send the Manager a message on the **Exchange** page. Add
-`ANTHROPIC_API_KEY` to `.env` for real answers - without it the example agents reply with simple rules, so you can
+`ROTEO_API_KEY` to `.env` for real answers from Claude (through the [Roteo](https://roteo.ai) gateway;
+`ANTHROPIC_API_KEY` works too) - without it the example agents reply with simple rules, so you can
 see the whole flow for free.
 
 No agents yet but want to design the visualizer? `python -m crew demo 30` fills the exchange with 30 minutes of
@@ -89,4 +90,4 @@ python -m crew demo 30    # fake traffic for 30 minutes (design without agents)
 
 ## Requirements
 
-Python 3.10+. Packages: FastAPI, uvicorn, httpx, PyYAML, anthropic. No Node, no build step.
+Python 3.10+. Packages: FastAPI, uvicorn, httpx, PyYAML, anthropic (only for the `ANTHROPIC_API_KEY` fallback). No Node, no build step.
