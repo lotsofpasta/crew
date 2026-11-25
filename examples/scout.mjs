@@ -113,7 +113,8 @@ async function step() {
 }
 
 console.log(`${KEY}: syncing with ${URL_}, ${FEEDS.length} feed(s) every ${EVERY / 1000}s`);
-for (;;) { await step(); await new Promise((r) => setTimeout(r, 10000)); }
+const SYNC_MS = Number(process.env.CREW_SYNC_EVERY || 10) * 1000;
+for (;;) { await step(); await new Promise((r) => setTimeout(r, SYNC_MS)); }
 
 // ------------------------------------------------------------------------------------------- .env
 function loadEnv(path) {

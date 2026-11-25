@@ -207,7 +207,9 @@ class Agent:
                 self.done_actions.add(rep["id"])
                 self._fire("approved", rep)
 
-    def run(self, every=15):
+    def run(self, every=None):
+        """Sync, dispatch, repeat. every: seconds between syncs (default CREW_SYNC_EVERY, else 10)."""
+        every = every or float(os.environ.get("CREW_SYNC_EVERY") or 10)
         log.info("%s: syncing with %s every %ss", self.key, self.url, every)
         self.status("on duty")
         while True:

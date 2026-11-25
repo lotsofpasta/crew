@@ -13,6 +13,11 @@ A plug-and-play starting point for running your own team of AI agents with:
 It ships with a clean default identity ([BRAND.md](BRAND.md)) so it looks finished on day one - and every colour,
 font and mark is a token or a file you swap. Making it look like yours is the point: see [DESIGN.md](DESIGN.md).
 
+![Walkthrough: sign in, the dashboard, asking the team on the exchange, approving a proposed action, the visualizer](docs/walkthrough.gif)
+
+<sub>Recorded with the example agents in `examples/` (manager, watchdog, scout). The researcher's answer was
+pre-scripted for the recording because no LLM key was set; with `ANTHROPIC_API_KEY` it answers with Claude.</sub>
+
 ```
   you ──► dashboard / exchange / visualizer ──► hub (FastAPI + SQLite) ◄── sync ── agent processes (any language)
                                                      │                                 │

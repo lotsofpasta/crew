@@ -24,4 +24,4 @@ def work(t):                                    # t: a ticket - id, src, title, 
     bot.finish(t["id"], "Echo", t["title"])
 
 
-bot.run(every=10)
+bot.run()

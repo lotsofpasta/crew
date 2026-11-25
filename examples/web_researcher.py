@@ -110,4 +110,4 @@ def chat(m):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
-    bot.run(every=10)
+    bot.run()
