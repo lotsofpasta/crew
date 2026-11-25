@@ -145,13 +145,13 @@ def health():
 @app.get("/api/brand")
 def brand():
     """Public: what the login screen needs before anyone signs in."""
-    return {"name": config.BRAND_NAME}
+    return {"name": config.BRAND_NAME, "tagline": config.BRAND_TAGLINE}
 
 
 # ------------------------------------------------------------------------------------------------ login
 @app.get("/api/whoami")
 def whoami(r: str = Depends(role)):
-    return {"role": r, "brand": config.BRAND_NAME}
+    return {"role": r, "brand": config.BRAND_NAME, "tagline": config.BRAND_TAGLINE}
 
 
 @app.post("/api/login")

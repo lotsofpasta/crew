@@ -21,7 +21,7 @@
 </head>
 <body>
 <header class="top">
-  <span class="brand" data-brand>Visualizer</span>
+  <a class="brand" href="/" data-brand-link><span data-brand>Visualizer</span></a>
   <nav><a href="/">Dashboard</a><a href="/exchange">Exchange</a><a href="/visualizer" class="on">Visualizer</a></nav>
   <button id="toggle-debug">Data</button>
 </header>
@@ -65,8 +65,14 @@ function render(now) {
   ctx.globalAlpha = 1; ctx.font = "13px " + color("--font"); ctx.textAlign = "center";
   for (const n of STATE.nodes.values()) {
     const p = pos.get(n.id);
-    ctx.fillStyle = n.attention ? color("--warn") : n.alive ? color("--ok") : color("--muted");
+    // identity = the agent's palette colour; state = the ring (attention) and fill strength (offline is faint)
+    const c = n.type === "agent" ? Crew.agentColor(n) : "var(--muted)";
+    ctx.fillStyle = c.startsWith("var(") ? color(c.slice(4, -1)) : c;
+    ctx.globalAlpha = n.alive ? 1 : 0.35;
     ctx.beginPath(); ctx.arc(p.x, p.y, n.type === "agent" ? 10 : 6, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    if (n.attention) { ctx.strokeStyle = color(n.attention === "issue" ? "--warn" : "--crit"); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 15, 0, Math.PI * 2); ctx.stroke(); }
     ctx.fillStyle = color("--text"); ctx.fillText(n.label, p.x, p.y + 26);
   }
   requestAnimationFrame(render);
@@ -76,7 +82,7 @@ function render(now) {
 const viz = VizData.start({ every: 2000 });
 viz.on("update", (state) => {
   STATE = state;
-  document.querySelectorAll("[data-brand]").forEach((e) => (e.textContent = state.brand || "Visualizer"));
+  Crew.brand(state.brand || "Visualizer");
   document.title = (state.brand || "") + " · Visualizer";
 });
 viz.on("pulse", (p) => {

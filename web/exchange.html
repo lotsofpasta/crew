@@ -13,12 +13,15 @@
   #chat li .who { font-weight: 600; }
   #tape { height: 30vh; overflow-y: auto; font-family: var(--mono); font-size: 12px; }
   .agent { cursor: pointer; }
-  .agent.sel { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .agent { border-radius: var(--radius-sm); padding-left: 6px !important; padding-right: 6px; }
+  .agent:hover { background: var(--panel-2); }
+  .agent.sel { background: var(--accent-soft); }
+  #chat li .who { color: var(--text); }
 </style>
 </head>
 <body>
 <header class="top">
-  <span class="brand" data-brand>Exchange</span>
+  <a class="brand" href="/" data-brand-link><span data-brand>Exchange</span></a>
   <nav><a href="/">Dashboard</a><a href="/exchange" class="on">Exchange</a><a href="/visualizer">Visualizer</a></nav>
   <span id="role" class="tag"></span>
 </header>
@@ -68,15 +71,20 @@ async function boot() {
   const who = await Crew.requireLogin();
   ROLE = who.role;
   document.title = who.brand + " · Exchange";
-  document.querySelectorAll("[data-brand]").forEach((e) => (e.textContent = who.brand));
+  Crew.brand(who.brand);
   document.getElementById("role").textContent = ROLE === "owner" ? "owner" : "view only";
   document.querySelectorAll(".owner-only").forEach((e) => e.classList.toggle("hidden", ROLE !== "owner"));
   Crew.poll(tick, 4000);
 }
 
+function chip(k) {
+  const a = agents.find((x) => x.key === k);
+  return a ? `<span class="dot" style="background:${Crew.agentColor(a)};margin-right:4px"></span>` : "";
+}
+
 function chatLine(s) {
   return `<li data-id="${s.id}"><span class="small muted">${time(s.t)}</span>
-    <span class="who">${esc(nameOf(s.src))}</span> → ${esc(nameOf(s.dst))} <span class="tag">${esc(s.kind)}</span>
+    ${chip(s.src)}<span class="who">${esc(nameOf(s.src))}</span> → ${esc(nameOf(s.dst))} <span class="tag">${esc(s.kind)}</span>
     <div class="${s.level ? "lvl-" + esc(s.level) : ""}">${esc(s.label)}</div>${s.text ? `<pre>${esc(s.text)}</pre>` : ""}</li>`;
 }
 
@@ -84,8 +92,9 @@ async function tick() {
   const d = await api(`/api/exchange?after=${LAST}&limit=300`);
   agents = d.agents; lines = d.lines;
   document.getElementById("agents").innerHTML = agents.map((a) =>
-    `<li class="agent ${SRC === a.key ? "sel" : ""}" data-src="${esc(a.key)}"><div class="row"><span class="dot ${a.alive ? "on" : ""}"></span><b>${esc(a.name)}</b></div>
-     <div class="small muted">${esc(a.role)} · ${esc(a.doing || "")} · ${ago(a.heartbeat)}</div></li>`).join("");
+    `<li class="agent row ${SRC === a.key ? "sel" : ""}" data-src="${esc(a.key)}" style="flex-wrap:nowrap;align-items:flex-start" tabindex="0">${Crew.avatar(a)}
+     <div style="min-width:0"><b>${esc(a.name)}</b><div class="small muted">${esc(a.role)} · ${a.alive ? "online" : "offline"} · ${ago(a.heartbeat)}</div>
+     <div class="small muted">${esc(a.doing || "")}</div></div></li>`).join("");
   document.getElementById("lines").innerHTML = lines.map((l) => `<li>${esc(l.label)}</li>`).join("");
   const sel = document.getElementById("say-to");
   if (!sel.options.length) sel.innerHTML = agents.map((a) => `<option value="${esc(a.key)}">${esc(a.name)}</option>`).join("");
@@ -130,6 +139,7 @@ document.getElementById("agents").addEventListener("click", async (ev) => {
   await older();
   const c = document.getElementById("chat"); c.scrollTop = c.scrollHeight;
 });
+document.getElementById("agents").addEventListener("keydown", (ev) => { if (ev.key === "Enter") ev.target.closest("[data-src]")?.click(); });
 document.getElementById("filter").onclick = () => document.querySelector(`[data-src="${SRC}"]`)?.click();
 
 document.addEventListener("click", async (ev) => {

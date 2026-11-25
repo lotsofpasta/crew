@@ -61,5 +61,25 @@
   }
   const time = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  window.Crew = { api, login, logout, requireLogin, poll, esc, ago, time, token: store };
+  // An agent's colour: its own `colour:` from agents.yaml, else the fixed palette slot (1-8, agents.yaml order),
+  // else neutral. Colours are never cycled: a 9th agent is not a 9th hue.
+  function agentColor(a) {
+    const own = a && (a.colour || a.color);
+    if (own && /^#[0-9a-f]{3,8}$/i.test(own)) return own;
+    return a && a.slot >= 1 && a.slot <= 8 ? `var(--agent-${a.slot})` : "var(--agent-other)";
+  }
+  const initials = (name) => String(name || "?").split(/[\s_-]+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  // <span class="avatar"> with initials (identity never by colour alone) and a status dot
+  const avatar = (a) => `<span class="avatar" style="--c:${agentColor(a)}" title="${esc(a.name)}">${esc(initials(a.name))}` +
+    `<span class="dot ${a.alive ? "on" : ""}" aria-label="${a.alive ? "online" : "offline"}"></span></span>`;
+
+  // header brand: <a class="brand" data-brand-link> gets the mark + BRAND_NAME
+  function brand(name) {
+    document.querySelectorAll("[data-brand]").forEach((e) => (e.textContent = name));
+    document.querySelectorAll("[data-brand-link]").forEach((e) => {
+      if (!e.querySelector(".mark")) e.insertAdjacentHTML("afterbegin", `<img class="mark" src="/static/brand/mark.svg" alt="">`);
+    });
+  }
+
+  window.Crew = { api, login, logout, requireLogin, poll, esc, ago, time, token: store, agentColor, initials, avatar, brand };
 })();

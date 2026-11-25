@@ -31,6 +31,7 @@ def env(key, default=None):
 
 
 BRAND_NAME = env("BRAND_NAME", "Crew")
+BRAND_TAGLINE = env("BRAND_TAGLINE", "Your agents, in one room.")
 DATA_DIR = Path(env("CREW_DATA_DIR", ROOT / "data"))
 DB_PATH = Path(env("CREW_DB", DATA_DIR / "crew.db"))
 TIMEZONE = env("CREW_TZ", "UTC")

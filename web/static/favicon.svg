@@ -1,1 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="12" fill="none" stroke="#888" stroke-width="3"/><circle cx="16" cy="16" r="4" fill="#888"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Crew">
+  <!-- Crew mark: three teammates, connected. Replace this file with your own mark (see BRAND.md). -->
+  <rect width="64" height="64" rx="16" fill="#c2410c"/>
+  <g stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity=".55">
+    <path d="M32 19 L19 42 M32 19 L45 42 M19 42 L45 42"/>
+  </g>
+  <circle cx="32" cy="19" r="7" fill="#ffffff"/>
+  <circle cx="19" cy="42" r="7" fill="#ffffff"/>
+  <circle cx="45" cy="42" r="7" fill="#ffd8c7"/>
+</svg>

@@ -1,7 +1,7 @@
 # Design brief: make it yours
 
-The template ships plain on purpose. The dashboard and exchange work, but look generic; the visualizer is a blank
-scaffold. This file is the brief for designing and branding all three - written so you can hand it straight to an
+The template ships with a default identity (see [BRAND.md](BRAND.md)) so it looks finished, but it is a starting
+point: the dashboard and exchange are styled only through tokens, and the visualizer is a blank scaffold. This file is the brief for designing and branding all three - written so you can hand it straight to an
 AI assistant (Claude Code, etc.) along with your own direction.
 
 ## How to use this
@@ -90,9 +90,10 @@ needs the owner.
 
 ## Branding checklist
 
-- [ ] `BRAND_NAME` in `.env` (used in titles, login, alerts)
-- [ ] Colour tokens and fonts in `web/static/base.css` (light + dark)
-- [ ] `web/static/favicon.svg` and any logo / art under `web/static/`
+- [ ] `BRAND_NAME` and `BRAND_TAGLINE` in `.env` (titles, sign-in screen, alerts)
+- [ ] Colour tokens and fonts in `web/static/base.css` (light + dark); keep text contrast at 4.5:1 or better
+- [ ] Agent colours: keep a fixed order, never cycle hues; check colour-blind separation if you change them
+- [ ] Your mark in `web/static/brand/mark.svg` (+ `lockup.svg`, `web/static/favicon.svg`) and any art under `web/static/`
 - [ ] Sign-in screen (`web/index.html`, `#login`) - the first thing people see
 - [ ] Dashboard and exchange restyled with the tokens
 - [ ] Visualizer scene replaced (`web/visualizer.html`)

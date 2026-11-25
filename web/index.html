@@ -10,17 +10,23 @@
 <body>
 <!-- Sign-in. Shown when there is no valid session. -->
 <section id="login" class="login hidden">
-  <h1 id="login-brand">Sign in</h1>
-  <form id="login-form" class="card">
-    <label class="small muted" for="pw">Password</label>
-    <input id="pw" type="password" autocomplete="current-password" autofocus>
-    <div class="row" style="margin-top:10px"><button class="primary" type="submit">Sign in</button><span id="login-err" class="small lvl-crit"></span></div>
-  </form>
+  <div class="box">
+    <img class="mark" src="/static/brand/mark.svg" alt="">
+    <h1 id="login-brand">Sign in</h1>
+    <p class="tagline" id="login-tagline"></p>
+    <form id="login-form" class="card">
+      <label for="pw">Password</label>
+      <input id="pw" type="password" autocomplete="current-password" autofocus>
+      <button class="primary" type="submit">Sign in</button>
+      <div id="login-err" class="err" role="alert"></div>
+    </form>
+    <p class="foot">Have a view-only link? Just open it.</p>
+  </div>
 </section>
 
 <div id="app" class="hidden">
   <header class="top">
-    <span class="brand" data-brand>Dashboard</span>
+    <a class="brand" href="/" data-brand-link><span data-brand>Dashboard</span></a>
     <nav><a href="/" class="on">Dashboard</a><a href="/exchange">Exchange</a><a href="/visualizer">Visualizer</a></nav>
     <span id="role" class="tag"></span>
     <button id="signin" class="hidden">Sign in</button>
@@ -59,6 +65,8 @@ async function boot() {
   document.title = brand.name;
   document.querySelectorAll("[data-brand]").forEach((e) => (e.textContent = brand.name));
   document.getElementById("login-brand").textContent = brand.name;
+  document.getElementById("login-tagline").textContent = brand.tagline || "";
+  Crew.brand(brand.name);
   let who;
   try { who = await api("/api/whoami", { noRedirect: true }); } catch (e) { return showLogin(); }
   if (new URLSearchParams(location.search).get("login") === "1" && who.role !== "owner") return showLogin();
@@ -108,8 +116,8 @@ async function refresh() {
      ${ROLE === "owner" ? `<button class="small" data-act="dismiss" data-id="${r.id}">Dismiss</button>` : ""}</li>`).join("")
     || `<li class="muted">All clear.</li>`;
   document.getElementById("team").innerHTML = d.agents.map((a) =>
-    `<li><div class="row"><span class="dot ${a.alive ? "on" : ""}"></span><b>${esc(a.name)}</b><span class="muted small">${esc(a.role)}</span></div>
-     <div class="small muted">${esc(a.doing || "")} · last seen ${ago(a.heartbeat)}${a.counts.issues ? ` · ${a.counts.issues} open` : ""}</div></li>`).join("")
+    `<li class="row" style="flex-wrap:nowrap;align-items:flex-start">${Crew.avatar(a)}<div style="min-width:0"><b>${esc(a.name)}</b> <span class="muted small">${esc(a.role)}</span>
+     <div class="small muted">${a.alive ? "online" : "offline"} · ${esc(a.doing || "")} · ${ago(a.heartbeat)}${a.counts.issues ? ` · ${a.counts.issues} open` : ""}</div></div></li>`).join("")
     || `<li class="muted">No agents in agents.yaml.</li>`;
   const sel = document.getElementById("task-to");
   if (!sel.options.length) sel.innerHTML = d.agents.map((a) => `<option value="${esc(a.key)}">${esc(a.name)}</option>`).join("");

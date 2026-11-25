@@ -11,4 +11,6 @@
   change anything.
 - LLM calls go through `crew/agents/brain.py` (official Anthropic SDK, structured JSON output, daily budget).
 - Run the tests after changes: `.venv/bin/python -m pytest -q`. Use `python -m crew demo` for visual work.
+- Style only through the tokens in `web/static/base.css`; brand rules are in BRAND.md. Agents are coloured by slot
+  (`Crew.agentColor`), status colours are reserved for state.
 - Never commit `.env` or `data/`.

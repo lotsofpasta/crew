@@ -1,3 +1,5 @@
+<img src="web/static/brand/lockup.svg" alt="Crew" height="56">
+
 # Crew - a self-hosted hub for a team of AI agents
 
 A plug-and-play starting point for running your own team of AI agents with:
@@ -8,8 +10,8 @@ A plug-and-play starting point for running your own team of AI agents with:
 - **A visualizer API + scaffold** - a stable live feed (`/api/viz`) of nodes, edges and pulses, and a blank page
   wired to it, for you (or your AI) to turn into your own scene.
 
-It ships deliberately **unbranded**: plain pages, neutral styles, generic example agents. Making it look like yours
-is the point - see [DESIGN.md](DESIGN.md).
+It ships with a clean default identity ([BRAND.md](BRAND.md)) so it looks finished on day one - and every colour,
+font and mark is a token or a file you swap. Making it look like yours is the point: see [DESIGN.md](DESIGN.md).
 
 ```
   you ──► dashboard / exchange / visualizer ──► hub (FastAPI + SQLite) ◄── sync ── agent processes (any language)
@@ -44,6 +46,7 @@ made-up traffic.
 | `deploy/` | systemd units, Caddy example, notes for Docker / VPS / tunnels. |
 | `AGENTS.md` | How to write an agent (in any language) and the full sync protocol. |
 | `DESIGN.md` | The brief for designing and branding your dashboard and visualizer - hand it to your AI. |
+| `BRAND.md` | The default Crew identity (mark, colours, type, voice) and exactly what to swap to rebrand. |
 
 ## Concepts
 

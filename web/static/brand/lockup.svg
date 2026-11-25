@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 64" role="img" aria-label="Crew">
+  <!-- Mark + wordmark, for READMEs and slides. -->
+  <style>text{fill:#16181d}@media (prefers-color-scheme:dark){text{fill:#f1f0ec}}</style>
+  <rect width="64" height="64" rx="16" fill="#c2410c"/>
+  <g stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity=".55"><path d="M32 19 L19 42 M32 19 L45 42 M19 42 L45 42"/></g>
+  <circle cx="32" cy="19" r="7" fill="#ffffff"/><circle cx="19" cy="42" r="7" fill="#ffffff"/><circle cx="45" cy="42" r="7" fill="#ffd8c7"/>
+  <text x="80" y="45" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, sans-serif" font-size="38" font-weight="700" letter-spacing="-1">crew</text>
+</svg>
