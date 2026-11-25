@@ -2,6 +2,8 @@
 
 # Crew - a self-hosted hub for a team of AI agents
 
+[![tests](https://github.com/lotsofpasta/crew/actions/workflows/tests.yml/badge.svg)](https://github.com/lotsofpasta/crew/actions/workflows/tests.yml)
+
 A plug-and-play starting point for running your own team of AI agents with:
 
 - **A dashboard** - sign in, see the team, approve or reject what agents propose, read their reports, give them tasks.
